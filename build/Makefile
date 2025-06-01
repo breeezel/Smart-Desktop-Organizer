@@ -201,6 +201,30 @@ DesktopManager/DesktopSorter.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.s
 .PHONY : DesktopManager/DesktopSorter.cpp.s
 
+WebClassifier/WebClassifier.o: WebClassifier/WebClassifier.cpp.o
+.PHONY : WebClassifier/WebClassifier.o
+
+# target to build an object file
+WebClassifier/WebClassifier.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o
+.PHONY : WebClassifier/WebClassifier.cpp.o
+
+WebClassifier/WebClassifier.i: WebClassifier/WebClassifier.cpp.i
+.PHONY : WebClassifier/WebClassifier.i
+
+# target to preprocess a source file
+WebClassifier/WebClassifier.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.i
+.PHONY : WebClassifier/WebClassifier.cpp.i
+
+WebClassifier/WebClassifier.s: WebClassifier/WebClassifier.cpp.s
+.PHONY : WebClassifier/WebClassifier.s
+
+# target to generate assembly for a file
+WebClassifier/WebClassifier.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.s
+.PHONY : WebClassifier/WebClassifier.cpp.s
+
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
 
@@ -243,6 +267,9 @@ help:
 	@echo "... DesktopManager/DesktopSorter.o"
 	@echo "... DesktopManager/DesktopSorter.i"
 	@echo "... DesktopManager/DesktopSorter.s"
+	@echo "... WebClassifier/WebClassifier.o"
+	@echo "... WebClassifier/WebClassifier.i"
+	@echo "... WebClassifier/WebClassifier.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"

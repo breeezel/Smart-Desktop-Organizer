@@ -5,6 +5,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopInfo.cpp.o.d"
   "CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.o"
   "CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.o.d"
+  "CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o"
+  "CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o.d"
   "CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.o"
   "CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.o.d"
   "SmartDesktopOrganizer"

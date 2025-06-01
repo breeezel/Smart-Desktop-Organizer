@@ -11,6 +11,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/app/DesktopManager/DesktopChecker.cpp" "CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopChecker.cpp.o" "gcc" "CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopChecker.cpp.o.d"
   "/app/DesktopManager/DesktopInfo.cpp" "CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopInfo.cpp.o" "gcc" "CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopInfo.cpp.o.d"
   "/app/DesktopManager/DesktopSorter.cpp" "CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.o" "gcc" "CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.o.d"
+  "/app/WebClassifier/WebClassifier.cpp" "CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o" "gcc" "CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o.d"
   "/app/src/main.cpp" "CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.o" "gcc" "CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.o.d"
   )
 
