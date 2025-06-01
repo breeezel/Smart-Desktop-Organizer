@@ -129,6 +129,30 @@ SmartDesktopOrganizer/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/build
 .PHONY : SmartDesktopOrganizer/fast
 
+ConfigManager/ConfigManager.o: ConfigManager/ConfigManager.cpp.o
+.PHONY : ConfigManager/ConfigManager.o
+
+# target to build an object file
+ConfigManager/ConfigManager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.o
+.PHONY : ConfigManager/ConfigManager.cpp.o
+
+ConfigManager/ConfigManager.i: ConfigManager/ConfigManager.cpp.i
+.PHONY : ConfigManager/ConfigManager.i
+
+# target to preprocess a source file
+ConfigManager/ConfigManager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.i
+.PHONY : ConfigManager/ConfigManager.cpp.i
+
+ConfigManager/ConfigManager.s: ConfigManager/ConfigManager.cpp.s
+.PHONY : ConfigManager/ConfigManager.s
+
+# target to generate assembly for a file
+ConfigManager/ConfigManager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.s
+.PHONY : ConfigManager/ConfigManager.cpp.s
+
 DesktopManager/DesktopChecker.o: DesktopManager/DesktopChecker.cpp.o
 .PHONY : DesktopManager/DesktopChecker.o
 
@@ -152,6 +176,30 @@ DesktopManager/DesktopChecker.s: DesktopManager/DesktopChecker.cpp.s
 DesktopManager/DesktopChecker.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopChecker.cpp.s
 .PHONY : DesktopManager/DesktopChecker.cpp.s
+
+DesktopManager/DesktopFileOperations.o: DesktopManager/DesktopFileOperations.cpp.o
+.PHONY : DesktopManager/DesktopFileOperations.o
+
+# target to build an object file
+DesktopManager/DesktopFileOperations.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.o
+.PHONY : DesktopManager/DesktopFileOperations.cpp.o
+
+DesktopManager/DesktopFileOperations.i: DesktopManager/DesktopFileOperations.cpp.i
+.PHONY : DesktopManager/DesktopFileOperations.i
+
+# target to preprocess a source file
+DesktopManager/DesktopFileOperations.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.i
+.PHONY : DesktopManager/DesktopFileOperations.cpp.i
+
+DesktopManager/DesktopFileOperations.s: DesktopManager/DesktopFileOperations.cpp.s
+.PHONY : DesktopManager/DesktopFileOperations.s
+
+# target to generate assembly for a file
+DesktopManager/DesktopFileOperations.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.s
+.PHONY : DesktopManager/DesktopFileOperations.cpp.s
 
 DesktopManager/DesktopInfo.o: DesktopManager/DesktopInfo.cpp.o
 .PHONY : DesktopManager/DesktopInfo.o
@@ -201,6 +249,30 @@ DesktopManager/DesktopSorter.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.s
 .PHONY : DesktopManager/DesktopSorter.cpp.s
 
+Logging/Logging.o: Logging/Logging.cpp.o
+.PHONY : Logging/Logging.o
+
+# target to build an object file
+Logging/Logging.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.o
+.PHONY : Logging/Logging.cpp.o
+
+Logging/Logging.i: Logging/Logging.cpp.i
+.PHONY : Logging/Logging.i
+
+# target to preprocess a source file
+Logging/Logging.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.i
+.PHONY : Logging/Logging.cpp.i
+
+Logging/Logging.s: Logging/Logging.cpp.s
+.PHONY : Logging/Logging.s
+
+# target to generate assembly for a file
+Logging/Logging.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.s
+.PHONY : Logging/Logging.cpp.s
+
 WebClassifier/WebClassifier.o: WebClassifier/WebClassifier.cpp.o
 .PHONY : WebClassifier/WebClassifier.o
 
@@ -225,29 +297,53 @@ WebClassifier/WebClassifier.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.s
 .PHONY : WebClassifier/WebClassifier.cpp.s
 
-src/main.o: src/main.cpp.o
-.PHONY : src/main.o
+src/mfc/MainFrm.o: src/mfc/MainFrm.cpp.o
+.PHONY : src/mfc/MainFrm.o
 
 # target to build an object file
-src/main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.o
-.PHONY : src/main.cpp.o
+src/mfc/MainFrm.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.o
+.PHONY : src/mfc/MainFrm.cpp.o
 
-src/main.i: src/main.cpp.i
-.PHONY : src/main.i
+src/mfc/MainFrm.i: src/mfc/MainFrm.cpp.i
+.PHONY : src/mfc/MainFrm.i
 
 # target to preprocess a source file
-src/main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.i
-.PHONY : src/main.cpp.i
+src/mfc/MainFrm.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.i
+.PHONY : src/mfc/MainFrm.cpp.i
 
-src/main.s: src/main.cpp.s
-.PHONY : src/main.s
+src/mfc/MainFrm.s: src/mfc/MainFrm.cpp.s
+.PHONY : src/mfc/MainFrm.s
 
 # target to generate assembly for a file
-src/main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.s
-.PHONY : src/main.cpp.s
+src/mfc/MainFrm.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.s
+.PHONY : src/mfc/MainFrm.cpp.s
+
+src/mfc/SmartDesktopOrganizerApp.o: src/mfc/SmartDesktopOrganizerApp.cpp.o
+.PHONY : src/mfc/SmartDesktopOrganizerApp.o
+
+# target to build an object file
+src/mfc/SmartDesktopOrganizerApp.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.o
+.PHONY : src/mfc/SmartDesktopOrganizerApp.cpp.o
+
+src/mfc/SmartDesktopOrganizerApp.i: src/mfc/SmartDesktopOrganizerApp.cpp.i
+.PHONY : src/mfc/SmartDesktopOrganizerApp.i
+
+# target to preprocess a source file
+src/mfc/SmartDesktopOrganizerApp.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.i
+.PHONY : src/mfc/SmartDesktopOrganizerApp.cpp.i
+
+src/mfc/SmartDesktopOrganizerApp.s: src/mfc/SmartDesktopOrganizerApp.cpp.s
+.PHONY : src/mfc/SmartDesktopOrganizerApp.s
+
+# target to generate assembly for a file
+src/mfc/SmartDesktopOrganizerApp.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SmartDesktopOrganizer.dir/build.make CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.s
+.PHONY : src/mfc/SmartDesktopOrganizerApp.cpp.s
 
 # Help Target
 help:
@@ -258,21 +354,33 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... SmartDesktopOrganizer"
+	@echo "... ConfigManager/ConfigManager.o"
+	@echo "... ConfigManager/ConfigManager.i"
+	@echo "... ConfigManager/ConfigManager.s"
 	@echo "... DesktopManager/DesktopChecker.o"
 	@echo "... DesktopManager/DesktopChecker.i"
 	@echo "... DesktopManager/DesktopChecker.s"
+	@echo "... DesktopManager/DesktopFileOperations.o"
+	@echo "... DesktopManager/DesktopFileOperations.i"
+	@echo "... DesktopManager/DesktopFileOperations.s"
 	@echo "... DesktopManager/DesktopInfo.o"
 	@echo "... DesktopManager/DesktopInfo.i"
 	@echo "... DesktopManager/DesktopInfo.s"
 	@echo "... DesktopManager/DesktopSorter.o"
 	@echo "... DesktopManager/DesktopSorter.i"
 	@echo "... DesktopManager/DesktopSorter.s"
+	@echo "... Logging/Logging.o"
+	@echo "... Logging/Logging.i"
+	@echo "... Logging/Logging.s"
 	@echo "... WebClassifier/WebClassifier.o"
 	@echo "... WebClassifier/WebClassifier.i"
 	@echo "... WebClassifier/WebClassifier.s"
-	@echo "... src/main.o"
-	@echo "... src/main.i"
-	@echo "... src/main.s"
+	@echo "... src/mfc/MainFrm.o"
+	@echo "... src/mfc/MainFrm.i"
+	@echo "... src/mfc/MainFrm.s"
+	@echo "... src/mfc/SmartDesktopOrganizerApp.o"
+	@echo "... src/mfc/SmartDesktopOrganizerApp.i"
+	@echo "... src/mfc/SmartDesktopOrganizerApp.s"
 .PHONY : help
 
 

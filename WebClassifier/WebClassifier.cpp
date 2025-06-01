@@ -1,36 +1,15 @@
 #include "WebClassifier.h"
-#include "DesktopManager/DesktopSorter.h"
-#include "DesktopManager/DesktopInfo.h"
+// Other necessary includes are already present from previous steps
+// (DesktopSorter.h, DesktopInfo.h, json.hpp, WinINet, filesystem, iostream, thread, chrono, etc.)
+// ConfigManager.h and Logging.h are now included via WebClassifier.h indirectly or directly.
 
-#ifdef _WIN32
-#include <wininet.h>
-#pragma comment(lib, "wininet.lib")
-#include <sstream>
-#include <iomanip>
-#include <vector>
-#include <fstream>
-#include <ShlObj.h>
-#include <libloaderapi.h>
-#include <filesystem>
-#else
-#include <vector>
-#include <algorithm>
-#include <filesystem>
-#endif
+// Ensure these are accessible if WebClassifier.h doesn't bring them transitively for .cpp
+#include "ConfigManager/ConfigManager.h"
+#include "Logging/Logging.h"
 
-#include <iostream> // For std::wcerr, std::wcout
-#include <thread>
-#include <chrono>
-#include <algorithm>
-#include <string>
 
-// --- Helper Functions ---
+// Static helper toLower_internal and wstringToUtf8 remain the same
 
-/**
- * @brief Converts a std::string to lowercase using ASCII/default locale rules.
- * @param s The string to convert.
- * @return The lowercase version of the string.
- */
 static std::string toLower_internal(std::string s) {
     std::transform(s.begin(), s.end(), s.begin(),
                    [](unsigned char c){ return static_cast<char>(std::tolower(c)); });
@@ -38,29 +17,23 @@ static std::string toLower_internal(std::string s) {
 }
 
 #ifdef _WIN32
-/**
- * @brief Converts a std::wstring to a UTF-8 encoded std::string.
- * @param wstr The wide string to convert.
- * @return The UTF-8 encoded string, or an empty string on failure.
- */
 static std::string wstringToUtf8(const std::wstring& wstr) {
     if (wstr.empty()) return std::string();
     int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.length(), NULL, 0, NULL, NULL);
-    if (size_needed == 0) { // Failure
-        std::wcerr << L"WebClassifier::wstringToUtf8: WideCharToMultiByte failed to get size. Error: " << GetLastError() << std::endl;
+    if (size_needed == 0) {
+        LOG_ERROR(L"WebClassifier::wstringToUtf8: WideCharToMultiByte failed to get size. Error: " + std::to_wstring(GetLastError()));
         return std::string();
     }
     std::string strTo(size_needed, 0);
     int chars_converted = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.length(), &strTo[0], size_needed, NULL, NULL);
-    if (chars_converted == 0) { // Failure
-        std::wcerr << L"WebClassifier::wstringToUtf8: WideCharToMultiByte failed to convert. Error: " << GetLastError() << std::endl;
+    if (chars_converted == 0) {
+        LOG_ERROR(L"WebClassifier::wstringToUtf8: WideCharToMultiByte failed to convert. Error: " + std::to_wstring(GetLastError()));
         return std::string();
     }
     return strTo;
 }
 #endif
 
-// --- WebClassifier Class Implementation ---
 
 WebClassifier::WebClassifier() {
 #ifdef _WIN32
@@ -68,144 +41,122 @@ WebClassifier::WebClassifier() {
     if (!cacheFilePath.empty()) {
         loadCache();
     } else {
-        std::wcerr << L"WebClassifier: Failed to determine cache file path. Cache will not be used." << std::endl;
-        // classificationCache remains in its default (null or empty object) state.
-        // Ensure it's a valid JSON object if other methods assume so.
+        LOG_ERROR(L"WebClassifier: Failed to determine cache file path. Cache will not be used.");
         classificationCache = json::object();
     }
 #else
-    // Non-Windows: No cache initialization needed for stub.
+    // LOG_DEBUG(L"WebClassifier: Non-Windows stub initialized."); // Example
 #endif
 }
 
 WebClassifier::~WebClassifier() {
-#ifdef _WIN32
-    // Cache is saved on each update, so not strictly necessary here unless there are
-    // operations that modify classificationCache without calling saveCache immediately.
-    // if (!cacheFilePath.empty()) {
-    //     saveCache();
-    // }
-#else
-    // Non-Windows: No cache cleanup needed for stub.
-#endif
+    // Destructor logic (if any specific needed beyond member cleanup)
 }
 
 #ifdef _WIN32
-/**
- * @brief Determines the full path for the classification cache file.
- * The cache file is typically located next to the executable.
- * @return std::wstring The full path to the cache file, or an empty string on failure.
- */
 std::wstring WebClassifier::getCacheFilePath() {
+    // (Implementation remains the same, add logging for errors)
     wchar_t path_buf[MAX_PATH];
     if (GetModuleFileNameW(NULL, path_buf, MAX_PATH) == 0) {
-        std::wcerr << L"WebClassifier::getCacheFilePath: GetModuleFileNameW failed. Error: " << GetLastError() << std::endl;
-        // Fallback to a relative path in current directory if absolute path fails.
-        // This is less ideal as "current directory" can vary.
-        return L"classification_cache.json";
+        LOG_ERROR(L"WebClassifier::getCacheFilePath: GetModuleFileNameW failed. Error: " + std::to_wstring(GetLastError()));
+        try {
+            return std::filesystem::current_path() / L"classification_cache.json"; // Fallback with logging
+        } catch (const std::filesystem::filesystem_error& e) {
+            LOG_ERROR(L"WebClassifier::getCacheFilePath: Filesystem error getting current_path for fallback: " + std::wstring(e.what(), e.what() + strlen(e.what())));
+            return L"classification_cache.json"; // Absolute last resort
+        }
     }
     try {
         std::filesystem::path executablePath = path_buf;
         return executablePath.parent_path() / L"classification_cache.json";
     } catch (const std::filesystem::filesystem_error& e) {
-        std::wcerr << L"WebClassifier::getCacheFilePath: Filesystem error: " << e.what() << std::endl;
+        LOG_ERROR(L"WebClassifier::getCacheFilePath: Filesystem error constructing path: " + std::wstring(e.what(), e.what() + strlen(e.what())));
         return L"classification_cache.json"; // Fallback
     }
 }
 
-/**
- * @brief Loads the classification cache from the JSON file into memory.
- * If the file doesn't exist or is invalid, an empty cache is initialized.
- */
 void WebClassifier::loadCache() {
     if (cacheFilePath.empty()) {
-        std::wcerr << L"WebClassifier::loadCache: Cache file path is empty, cannot load." << std::endl;
-        classificationCache = json::object(); // Ensure it's a valid object
+        LOG_WARNING(L"WebClassifier::loadCache: Cache file path is empty, cannot load.");
+        classificationCache = json::object();
         return;
     }
     std::ifstream ifs(cacheFilePath);
     if (!ifs.is_open()) {
-        // This is not an error if the cache file simply doesn't exist yet.
-        // std::wcout << L"WebClassifier::loadCache: Cache file not found: " << cacheFilePath << L". A new one will be created." << std::endl;
+        LOG_INFO(L"WebClassifier::loadCache: Cache file not found: " + cacheFilePath.wstring() + L". A new one will be created if updates occur.");
         classificationCache = json::object();
         return;
     }
     try {
         ifs >> classificationCache;
         if (!classificationCache.is_object()) {
-            std::wcerr << L"WebClassifier::loadCache: Cache data is not a valid JSON object. Initializing empty cache." << std::endl;
+            LOG_WARNING(L"WebClassifier::loadCache: Cache data in '" + cacheFilePath.wstring() + L"' is not a valid JSON object. Initializing empty cache.");
             classificationCache = json::object();
+        } else {
+            LOG_INFO(L"WebClassifier::loadCache: Cache loaded successfully from " + cacheFilePath.wstring());
         }
     } catch (json::parse_error& e) {
-        std::wcerr << L"WebClassifier::loadCache: Error parsing cache file '" << cacheFilePath
-                   << L"'. Error: " << e.what() << L". Starting with an empty cache." << std::endl;
+        LOG_ERROR(L"WebClassifier::loadCache: Error parsing cache file '" + cacheFilePath.wstring()
+                   + L"'. Error: " + std::wstring(e.what(), e.what() + strlen(e.what())) + L". Starting with an empty cache.");
         classificationCache = json::object();
-    } catch (const std::exception& e) { // Catch other potential exceptions from stream operations
-        std::wcerr << L"WebClassifier::loadCache: Generic error reading cache file '" << cacheFilePath
-                   << L"'. Error: " << e.what() << L". Starting with an empty cache." << std::endl;
+    } catch (const std::exception& e) {
+        LOG_ERROR(L"WebClassifier::loadCache: Generic error reading cache file '" + cacheFilePath.wstring()
+                   + L"'. Error: " + std::wstring(e.what(), e.what() + strlen(e.what())) + L". Starting with an empty cache.");
         classificationCache = json::object();
     }
-    if (ifs.bad()) { // Check for stream errors not covered by exceptions
-        std::wcerr << L"WebClassifier::loadCache: Stream error after reading cache file '" << cacheFilePath << L"'." << std::endl;
-        // Potentially re-initialize cache if state is uncertain
+     if (ifs.bad()) {
+        LOG_ERROR(L"WebClassifier::loadCache: Stream error after reading cache file '" + cacheFilePath.wstring() + L"'.");
         classificationCache = json::object();
     }
     ifs.close();
 }
 
-/**
- * @brief Saves the current in-memory classification cache to the JSON file.
- */
 void WebClassifier::saveCache() {
     if (cacheFilePath.empty()) {
-        std::wcerr << L"WebClassifier::saveCache: Cache file path is empty, cannot save." << std::endl;
+        LOG_ERROR(L"WebClassifier::saveCache: Cache file path is empty, cannot save.");
         return;
     }
     std::ofstream ofs(cacheFilePath);
     if (!ofs.is_open()) {
-        std::wcerr << L"WebClassifier::saveCache: Failed to open cache file for saving: " << cacheFilePath << std::endl;
+        LOG_ERROR(L"WebClassifier::saveCache: Failed to open cache file for saving: " + cacheFilePath.wstring());
         return;
     }
     try {
-        // Ensure classificationCache is an object before dumping, especially if it could be null after a failed load.
         if (classificationCache.is_null()) classificationCache = json::object();
-        ofs << classificationCache.dump(4); // Pretty print with 4 spaces
-        if (ofs.fail()) { // Check for write errors
-            std::wcerr << L"WebClassifier::saveCache: Failed to write to cache file: " << cacheFilePath << std::endl;
+        ofs << classificationCache.dump(4);
+        if (ofs.fail()) {
+            LOG_ERROR(L"WebClassifier::saveCache: Failed to write to cache file: " + cacheFilePath.wstring());
+        } else {
+            // LOG_DEBUG(L"WebClassifier::saveCache: Cache saved to " + cacheFilePath.wstring());
         }
     } catch (const std::exception& e) {
-        std::wcerr << L"WebClassifier::saveCache: Error dumping JSON to string for saving: " << e.what() << std::endl;
+        LOG_ERROR(L"WebClassifier::saveCache: Error dumping JSON to string for saving: " + std::wstring(e.what(), e.what() + strlen(e.what())));
     }
     ofs.close();
 }
 
-/**
- * @brief Clears the in-memory cache and deletes the cache file from disk.
- */
 void WebClassifier::clearCache() {
-    classificationCache = json::object(); // Clear the nlohmann::json object first
-    saveCache(); // Save the now empty cache (effectively clearing the file content or creating an empty one)
-
+    LOG_INFO(L"WebClassifier::clearCache - Cache clearing requested.");
+    classificationCache = json::object();
+    saveCache();
     if (!cacheFilePath.empty()) {
         std::error_code ec;
         std::filesystem::remove(cacheFilePath, ec);
         if (ec) {
-            std::wcerr << L"WebClassifier::clearCache: Could not delete cache file: " << cacheFilePath
-                       << L". Error: " << ec.message() << std::endl;
+            LOG_ERROR(L"WebClassifier::clearCache: Could not delete cache file: " + cacheFilePath.wstring()
+                       + L". Error: " + std::wstring(ec.message().begin(), ec.message().end()));
+        } else {
+            LOG_INFO(L"WebClassifier::clearCache: Cache file deleted: " + cacheFilePath.wstring());
         }
     }
-    // Ensure cache is a valid empty object after clearing
     classificationCache = json::object();
 }
 
-/**
- * @brief Retrieves a category for an item name from the cache.
- * @param itemNameOrKey The name or key (UTF-8 converted) of the item.
- * @return ItemCategory The cached category, or UNCLASSIFIED if not found or on error.
- */
 ItemCategory WebClassifier::getCachedCategory(const std::wstring& itemNameOrKey) {
+    // (Implementation remains similar, add logging for type error)
     std::string key = wstringToUtf8(itemNameOrKey);
-    if (key.empty() && !itemNameOrKey.empty()) { // Handle wstringToUtf8 failure
+    if (key.empty() && !itemNameOrKey.empty()) {
+        LOG_WARNING(L"WebClassifier::getCachedCategory: Failed to convert key '" + itemNameOrKey + L"' to UTF-8 for cache lookup.");
         return ItemCategory::UNCLASSIFIED;
     }
     if (classificationCache.is_null()) classificationCache = json::object();
@@ -214,38 +165,29 @@ ItemCategory WebClassifier::getCachedCategory(const std::wstring& itemNameOrKey)
             std::string categoryStr = classificationCache[key].get<std::string>();
             return stringToCategory(categoryStr);
         } catch (json::type_error& e) {
-             std::wcerr << L"WebClassifier::getCachedCategory: JSON type error for key '" << itemNameOrKey
-                        << L"'. Expected string. Error: " << e.what() << std::endl;
+             LOG_ERROR(L"WebClassifier::getCachedCategory: JSON type error for key '" + itemNameOrKey
+                        + L"'. Expected string. Error: " + std::wstring(e.what(), e.what() + strlen(e.what())));
             return ItemCategory::UNCLASSIFIED;
         }
     }
     return ItemCategory::UNCLASSIFIED;
 }
 
-/**
- * @brief Updates the cache with a classification for an item and saves the cache.
- * @param itemNameOrKey The name or key (UTF-8 converted) of the item.
- * @param category The category to cache for the item.
- */
 void WebClassifier::updateCache(const std::wstring& itemNameOrKey, ItemCategory category) {
+    // (Implementation remains similar, add logging for key conversion error)
     if (classificationCache.is_null()) classificationCache = json::object();
     std::string key = wstringToUtf8(itemNameOrKey);
-    if (key.empty() && !itemNameOrKey.empty()) { // Handle wstringToUtf8 failure
-         std::wcerr << L"WebClassifier::updateCache: Failed to convert item name to UTF-8 for cache key. Item: " << itemNameOrKey << std::endl;
+    if (key.empty() && !itemNameOrKey.empty()) {
+        LOG_ERROR(L"WebClassifier::updateCache: Failed to convert item name '" + itemNameOrKey + L"' to UTF-8 for cache key. Not updating cache.");
         return;
     }
     std::string categoryStr = categoryToString(category);
     classificationCache[key] = categoryStr;
+    // LOG_DEBUG(L"WebClassifier::updateCache: Updated cache for key '" + itemNameOrKey + L"' with category " + std::wstring(categoryStr.begin(), categoryStr.end()));
     saveCache();
 }
 
-/**
- * @brief Converts an ItemCategory enum to its string representation for JSON storage.
- * @param category The ItemCategory enum value.
- * @return std::string The string representation of the category.
- */
-std::string WebClassifier::categoryToString(ItemCategory category) {
-    // (Implementation remains the same)
+std::string WebClassifier::categoryToString(ItemCategory category) { /* remains same */
     switch (category) {
         case ItemCategory::FOLDER: return "FOLDER";
         case ItemCategory::GAME: return "GAME";
@@ -259,14 +201,7 @@ std::string WebClassifier::categoryToString(ItemCategory category) {
         default: return "UNKNOWN";
     }
 }
-
-/**
- * @brief Converts a string from JSON back to an ItemCategory enum.
- * @param categoryStr The string representation of the category.
- * @return ItemCategory The corresponding enum value, or UNCLASSIFIED if the string is not recognized.
- */
-ItemCategory WebClassifier::stringToCategory(const std::string& categoryStr) {
-    // (Implementation remains the same)
+ItemCategory WebClassifier::stringToCategory(const std::string& categoryStr) { /* remains same */
     if (categoryStr == "FOLDER") return ItemCategory::FOLDER;
     if (categoryStr == "GAME") return ItemCategory::GAME;
     if (categoryStr == "PROGRAM") return ItemCategory::PROGRAM;
@@ -277,13 +212,7 @@ ItemCategory WebClassifier::stringToCategory(const std::string& categoryStr) {
     if (categoryStr == "SPECIAL_SYSTEM") return ItemCategory::SPECIAL_SYSTEM;
     return ItemCategory::UNCLASSIFIED;
 }
-
-/**
- * @brief Extracts the parent folder path from a given item path.
- * @param itemPath The full path to the item.
- * @return std::wstring The path of the parent folder, or an empty string on error/if no parent.
- */
-std::wstring WebClassifier::getParentFolderPath(const std::wstring& itemPath) {
+std::wstring WebClassifier::getParentFolderPath(const std::wstring& itemPath) { /* remains same, add logging */
     if (itemPath.empty()) return L"";
     try {
         std::filesystem::path p(itemPath);
@@ -291,21 +220,15 @@ std::wstring WebClassifier::getParentFolderPath(const std::wstring& itemPath) {
             return p.parent_path().wstring();
         }
     } catch (const std::filesystem::filesystem_error& e) {
-        std::wcerr << L"WebClassifier::getParentFolderPath: Filesystem error for path '" << itemPath
-                   << L"'. Error: " << e.what() << std::endl;
-    } catch (const std::exception& e) { // Catch other potential errors
-        std::wcerr << L"WebClassifier::getParentFolderPath: Generic error for path '" << itemPath
-                   << L"'. Error: " << e.what() << std::endl;
+        LOG_ERROR(L"WebClassifier::getParentFolderPath: Filesystem error for path '" + itemPath
+                   + L"'. Error: " + std::wstring(e.what(), e.what() + strlen(e.what())));
+    } catch (const std::exception& e) {
+        LOG_ERROR(L"WebClassifier::getParentFolderPath: Generic error for path '" + itemPath
+                   + L"'. Error: " + std::wstring(e.what(), e.what() + strlen(e.what())));
     }
     return L"";
 }
-
-/**
- * @brief Extracts the folder name from a given folder path.
- * @param folderPath The full path to the folder.
- * @return std::wstring The name of the folder, or an empty string on error.
- */
-std::wstring WebClassifier::getFolderName(const std::wstring& folderPath) {
+std::wstring WebClassifier::getFolderName(const std::wstring& folderPath) { /* remains same, add logging */
     if (folderPath.empty()) return L"";
      try {
         std::filesystem::path p(folderPath);
@@ -313,30 +236,23 @@ std::wstring WebClassifier::getFolderName(const std::wstring& folderPath) {
             return p.filename().wstring();
         }
     } catch (const std::filesystem::filesystem_error& e) {
-        std::wcerr << L"WebClassifier::getFolderName: Filesystem error for path '" << folderPath
-                   << L"'. Error: " << e.what() << std::endl;
+        LOG_ERROR(L"WebClassifier::getFolderName: Filesystem error for path '" + folderPath
+                   + L"'. Error: " + std::wstring(e.what(), e.what() + strlen(e.what())));
     } catch (const std::exception& e) {
-        std::wcerr << L"WebClassifier::getFolderName: Generic error for path '" << folderPath
-                   << L"'. Error: " << e.what() << std::endl;
+        LOG_ERROR(L"WebClassifier::getFolderName: Generic error for path '" + folderPath
+                   + L"'. Error: " + std::wstring(e.what(), e.what() + strlen(e.what())));
     }
     return L"";
 }
+#endif
 
-#endif // _WIN32 for cache and path logic
-
-/**
- * @brief URL-encodes a wide string. Converts to UTF-8 then percent-encodes.
- * @param wide_data The wide string to encode.
- * @return std::string The URL-encoded string. Returns empty on UTF-8 conversion failure.
- */
-std::string WebClassifier::urlEncode(const std::wstring& wide_data) {
+std::string WebClassifier::urlEncode(const std::wstring& wide_data) { /* remains same, add logging for error */
 #ifdef _WIN32
-    std::string data_utf8 = wstringToUtf8(wide_data);
-    if (data_utf8.empty() && !wide_data.empty()) { // Check if conversion failed
-        // Error already printed by wstringToUtf8
+    std::string data_utf8 = wstringToUtf8(wide_data); // wstringToUtf8 now has logging
+    if (data_utf8.empty() && !wide_data.empty()) {
         return "";
     }
-    if (data_utf8.empty()) return ""; // If input was empty, data_utf8 is empty.
+    if (data_utf8.empty()) return "";
 
     std::ostringstream encoded_stream;
     encoded_stream << std::hex << std::setfill('0');
@@ -349,8 +265,7 @@ std::string WebClassifier::urlEncode(const std::wstring& wide_data) {
     }
     return encoded_stream.str();
 #else
-    // Non-Windows stub for urlEncode
-    // std::wcerr << L"Warning: urlEncode is a basic stub on non-Windows." << std::endl;
+    // LOG_DEBUG(L"WebClassifier::urlEncode: Using non-Windows stub.");
     std::string s;
     s.reserve(wide_data.length());
     for(wchar_t wc : wide_data) {
@@ -361,20 +276,14 @@ std::string WebClassifier::urlEncode(const std::wstring& wide_data) {
             snprintf(buf, sizeof(buf), "%%%02X", static_cast<unsigned char>(wc));
             s += buf;
         } else {
-            s += "%3F"; // Placeholder for non-ASCII wide chars
+            s += "%3F";
         }
     }
     return s;
 #endif
 }
 
-/**
- * @brief Executes an HTTP GET request using WinINet.
- * @param url The URL to fetch.
- * @param response Output string to store the HTTP response body.
- * @return true if the request was made and response reading attempted, false on critical errors (e.g., cannot open session/URL).
- */
-bool WebClassifier::executeHttpGet(const std::string& url, std::string& response) {
+bool WebClassifier::executeHttpGet(const std::string& url, std::string& response) { /* remains same, add logging */
 #ifdef _WIN32
     response.clear();
     HINTERNET hInternetSession = NULL;
@@ -383,98 +292,74 @@ bool WebClassifier::executeHttpGet(const std::string& url, std::string& response
     std::vector<char> buffer_vec(BUFFER_SIZE);
     DWORD bytesRead = 0;
 
-    // Step 1: Initialize WinINet session
     hInternetSession = InternetOpenA("SmartDesktopOrganizer/1.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
     if (!hInternetSession) {
-        std::wcerr << L"WebClassifier::executeHttpGet: InternetOpenA failed. Error: " << GetLastError() << std::endl;
+        LOG_ERROR(L"WebClassifier::executeHttpGet: InternetOpenA failed. Error: " + std::to_wstring(GetLastError()));
         return false;
     }
-
-    // Step 2: Open the URL
     hHttpOpen = InternetOpenUrlA(hInternetSession, url.c_str(), NULL, 0,
                                INTERNET_FLAG_RELOAD | INTERNET_FLAG_NO_CACHE_WRITE | INTERNET_FLAG_SECURE | INTERNET_FLAG_KEEP_CONNECTION, 0);
     if (!hHttpOpen) {
-        std::wcerr << L"WebClassifier::executeHttpGet: InternetOpenUrlA failed for URL '" << url.c_str()
-                   << L"'. Error: " << GetLastError() << std::endl;
+        LOG_ERROR(L"WebClassifier::executeHttpGet: InternetOpenUrlA failed for URL '" + std::wstring(url.begin(), url.end())
+                   + L"'. Error: " + std::to_wstring(GetLastError()));
         InternetCloseHandle(hInternetSession);
         return false;
     }
-
-    // Step 3: Read the response data
     while (InternetReadFile(hHttpOpen, buffer_vec.data(), (DWORD)buffer_vec.size() - 1, &bytesRead) && bytesRead > 0) {
         buffer_vec[bytesRead] = '\0';
         response.append(buffer_vec.data());
     }
-    // After loop, bytesRead == 0. Check for errors if response is empty or last read was partial.
-    // GetLastError() can provide more info if InternetReadFile returned FALSE.
+    // Check for errors after loop, if InternetReadFile returned FALSE but bytesRead was 0.
+    DWORD lastError = GetLastError();
+    if (bytesRead == 0 && response.empty() && lastError != ERROR_SUCCESS && lastError != ERROR_INTERNET_NAME_NOT_RESOLVED /* etc. */ ) {
+        // Potentially log if it seems like an error rather than just empty response
+        // LOG_WARNING(L"WebClassifier::executeHttpGet: InternetReadFile completed but response is empty. LastError: " + std::to_wstring(lastError));
+    }
 
-    // Step 4: Close handles
     InternetCloseHandle(hHttpOpen);
     InternetCloseHandle(hInternetSession);
     return true;
 #else
-    // Non-Windows stub for executeHttpGet
-    // std::wcerr << L"Warning: executeHttpGet is a stub on non-Windows." << std::endl;
+    // LOG_DEBUG(L"WebClassifier::executeHttpGet: Using non-Windows stub for URL: " + std::wstring(url.begin(), url.end()));
     response = "<html><body>Mock HTTP GET response for " + url + ". Keywords: game, software, application. Stub.</body></html>";
     return true;
 #endif
 }
 
-/**
- * @brief Classifies an item based on keywords found in HTML content.
- * This is a basic implementation using keyword scoring.
- * @param htmlResponse The HTML content (UTF-8 string) from a web search.
- * @param itemName The original name of the item being classified (for context).
- * @return ItemCategory The deduced category.
- */
-ItemCategory WebClassifier::classifyItemFromHtml(const std::string& htmlResponse, const std::wstring& itemName) {
+ItemCategory WebClassifier::classifyItemFromHtml(const std::string& htmlResponse, const std::wstring& itemName) { /* remains same */
 #ifdef _WIN32
-    // Logic: Convert HTML to lowercase. Define keyword lists for GAME and PROGRAM.
-    // Score based on keyword presence. Check item name for hints.
-    // More sophisticated logic could involve NLP, regex, or DOM parsing.
     std::string lowerHtml = toLower_internal(htmlResponse);
     std::wstring lowerItemNameW = itemName;
     std::transform(lowerItemNameW.begin(), lowerItemNameW.end(), lowerItemNameW.begin(), ::towlower);
-
-    // Keywords are illustrative and can be expanded.
     std::vector<std::string> gameKeywords = {"video game", "computer game", "pc game", "official game site", "download game", "buy game", "play game", "игра", "компьютерная игра", "скачать игру", "купить игру", "играть в игру", "официальный сайт игры", "steam store", "epic games store", "gog.com", "origin store", "ubisoft connect", "game review", "gameplay", "walkthrough", "прохождение игры", "обзор игры"};
     std::vector<std::string> programKeywords = {"software", "application", "program", "utility", "tool", "driver", "sdk", "ide", "программа", "приложение", "утилита", "инструмент", "драйвер", "download software", "official website", "скачать программу", "официальный сайт"};
-
     int gameScore = 0;
     int programScore = 0;
     for (const auto& keyword : gameKeywords) if (lowerHtml.find(keyword) != std::string::npos) gameScore++;
     for (const auto& keyword : programKeywords) if (lowerHtml.find(keyword) != std::string::npos) programScore++;
-
     std::string lowerItemNameS_utf8 = wstringToUtf8(lowerItemNameW);
-    if (toLower_internal(lowerItemNameS_utf8).find("game") != std::string::npos || toLower_internal(lowerItemNameS_utf8).find("игра") != std::string::npos) gameScore += 2; // Boost score from item name
+    if (toLower_internal(lowerItemNameS_utf8).find("game") != std::string::npos || toLower_internal(lowerItemNameS_utf8).find("игра") != std::string::npos) gameScore += 2;
     if (toLower_internal(lowerItemNameS_utf8).find("software") != std::string::npos || toLower_internal(lowerItemNameS_utf8).find("app") != std::string::npos || toLower_internal(lowerItemNameS_utf8).find("program") != std::string::npos) programScore += 2;
-
-    // Decision logic based on scores
     if (gameScore > 0 && programScore == 0) return ItemCategory::GAME;
     if (programScore > 0 && gameScore == 0) return ItemCategory::PROGRAM;
-    if (gameScore > programScore) { // Game score is higher
-        // Refine if item name suggests development tool
+    if (gameScore > programScore) {
         if (lowerItemNameW.find(L"sdk") != std::wstring::npos || lowerItemNameW.find(L"engine") != std::wstring::npos || lowerItemNameW.find(L"editor") != std::wstring::npos || lowerItemNameW.find(L"development kit") != std::wstring::npos || lowerItemNameW.find(L"dev kit") != std::wstring::npos) {
             if (lowerHtml.find("game development") != std::string::npos || lowerHtml.find("разработка игр") != std::string::npos || lowerHtml.find("game engine") != std::string::npos) {
-                return ItemCategory::PROGRAM; // It's a game development tool
+                return ItemCategory::PROGRAM;
             }
         }
         return ItemCategory::GAME;
     }
-    if (programScore > gameScore) return ItemCategory::PROGRAM; // Program score is higher
-    if (gameScore > 0 && gameScore == programScore) { // Scores are tied and positive
-        // Ambiguous case, could check more specific details or default.
-        // If item name has strong program hints, prefer PROGRAM.
-        if (lowerItemNameW.find(L"studio") != std::wstring::npos || lowerItemNameW.find(L"maker") != std::wstring::npos ||
-            lowerItemNameW.find(L"develop") != std::wstring::npos || lowerItemNameW.find(L"sdk") != std::wstring::npos) {
+    if (programScore > gameScore) return ItemCategory::PROGRAM;
+    if (gameScore > 0 && gameScore == programScore) {
+        if (lowerItemNameW.find(L"studio") != std::wstring::npos || lowerItemNameW.find(L"maker") != std::wstring::npos || lowerItemNameW.find(L"develop") != std::wstring::npos || lowerItemNameW.find(L"sdk") != std::wstring::npos) {
             return ItemCategory::PROGRAM;
         }
-        return ItemCategory::UNCLASSIFIED; // Default for ties if not clearly a program tool
+        return ItemCategory::UNCLASSIFIED;
     }
-    return ItemCategory::UNCLASSIFIED; // Default if no keywords hit or scores are zero
+    return ItemCategory::UNCLASSIFIED;
 #else
-    // Non-Windows stub for classifyItemFromHtml
-    // std::wcerr << L"Warning: classifyItemFromHtml is a stub on non-Windows." << std::endl;
+    // LOG_DEBUG(L"WebClassifier::classifyItemFromHtml: Using non-Windows stub for item: " + itemName);
     (void)htmlResponse;
     std::wstring lowerItemNameW = itemName;
     std::transform(lowerItemNameW.begin(), lowerItemNameW.end(), lowerItemNameW.begin(), ::towlower);
@@ -488,44 +373,39 @@ ItemCategory WebClassifier::classifyItemFromHtml(const std::string& htmlResponse
 #endif
 }
 
-/**
- * @brief Performs a web search for the given desktop item to determine its category.
- * Uses caching to avoid repeated searches for the same item or parent folder.
- * Implements parent folder search fallback if item classification is uncertain.
- * @param item The DesktopItem to classify.
- * @param outHtmlResponse Output string to store the HTML response (for debugging).
- * @return ItemCategory The deduced category.
- */
 ItemCategory WebClassifier::performSearch(const DesktopItem& item, std::string& outHtmlResponse) {
     outHtmlResponse.clear();
 #ifdef _WIN32
-    // Cache stores item name (UTF-8 string) to category (string)
-    // Step 1: Try classifying item name directly from cache or web
-    ItemCategory category = ItemCategory::UNCLASSIFIED; // Default to UNCLASSIFIED
+    // Check ConfigManager if web classifier is enabled
+    if (!ConfigManager::getInstance().isWebClassifierEnabled()) {
+        LOG_INFO(L"WebClassifier::performSearch: Web Classifier is disabled in settings. Skipping for item: " + item.name);
+        return ItemCategory::UNCLASSIFIED;
+    }
+
+    ItemCategory category = ItemCategory::UNCLASSIFIED;
     std::string keyItemName = wstringToUtf8(item.name);
 
-    if (keyItemName.empty() && !item.name.empty()) { // UTF-8 conversion failed for item name
-        std::wcerr << L"WebClassifier::performSearch: Failed to convert item name '" << item.name << L"' to UTF-8 for cache key." << std::endl;
-        // Cannot proceed without a valid key for cache or search.
+    if (keyItemName.empty() && !item.name.empty()) {
+        LOG_ERROR(L"WebClassifier::performSearch: Failed to convert item name '" + item.name + L"' to UTF-8 for cache key.");
         return ItemCategory::UNCLASSIFIED;
     }
 
     if (classificationCache.contains(keyItemName)) {
-        category = getCachedCategory(item.name); // Use original wstring item.name
-        std::wcout << L"  [Cache HIT for item: '" << item.name << L"'] -> " << categoryToString(category) << std::endl;
+        category = getCachedCategory(item.name);
+        LOG_INFO(L"  [Cache HIT for item: '" + item.name + L"'] -> " + std::wstring(categoryToString(category).begin(), categoryToString(category).end()));
     } else {
-        std::wcout << L"  [Web SEARCH for item: '" << item.name << L"']" << std::endl;
+        LOG_INFO(L"  [Web SEARCH for item: '" + item.name + L"']");
         std::wstring searchQueryItem = item.name + L" software application game file type category";
         std::string encodedQueryItem = urlEncode(searchQueryItem);
 
         if (!encodedQueryItem.empty() || searchQueryItem.empty()) {
             std::string urlItem = "https://www.google.com/search?q=" + encodedQueryItem + "&hl=en";
-            // Throttling logic
             static auto lastRequestTime = std::chrono::steady_clock::now() - std::chrono::seconds(5);
             auto now = std::chrono::steady_clock::now();
             auto timeSinceLastRequest = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastRequestTime);
             const long long minIntervalMs = 2000;
             if (timeSinceLastRequest.count() < minIntervalMs) {
+                LOG_DEBUG(L"WebClassifier::performSearch: Throttling item search. Sleeping for " + std::to_wstring(minIntervalMs - timeSinceLastRequest.count()) + L"ms.");
                 std::this_thread::sleep_for(std::chrono::milliseconds(minIntervalMs - timeSinceLastRequest.count()));
             }
             lastRequestTime = std::chrono::steady_clock::now();
@@ -534,47 +414,49 @@ ItemCategory WebClassifier::performSearch(const DesktopItem& item, std::string& 
             bool success = executeHttpGet(urlItem, itemHtmlResponse);
             if (success && !itemHtmlResponse.empty()) {
                 category = classifyItemFromHtml(itemHtmlResponse, item.name);
+                LOG_INFO(L"WebClassifier::performSearch: Item '" + item.name + L"' classified as " + std::wstring(categoryToString(category).begin(), categoryToString(category).end()) + L" from web.");
                 if (!outHtmlResponse.empty()) outHtmlResponse += "\n==== Item Search Response ("+wstringToUtf8(item.name)+") ====\n";
                 outHtmlResponse += itemHtmlResponse;
             } else {
+                LOG_ERROR(L"WebClassifier::performSearch: executeHttpGet failed or got empty response for item '" + item.name + L"'. URL: " + std::wstring(urlItem.begin(), urlItem.end()));
                 category = ItemCategory::UNCLASSIFIED;
             }
             updateCache(item.name, category);
         } else {
+             LOG_ERROR(L"WebClassifier::performSearch: URL encoding failed for item query '" + searchQueryItem + L"'.");
              category = ItemCategory::UNCLASSIFIED;
-             updateCache(item.name, category); // Cache as UNCLASSIFIED if encoding fails for item name
+             updateCache(item.name, category);
         }
     }
 
-    // Step 2: If item is still UNCLASSIFIED and is a file/shortcut, try parent folder
     if (category == ItemCategory::UNCLASSIFIED &&
         (item.type == DesktopItem::ItemType::FILE || item.type == DesktopItem::ItemType::SHORTCUT)) {
 
         std::wstring parentPath = getParentFolderPath(item.path);
         if (!parentPath.empty()) {
             std::wstring folderName = getFolderName(parentPath);
-            if (!folderName.empty() && folderName != L"." && folderName != L"..") { // Ensure folder name is valid
+            if (!folderName.empty() && folderName != L"." && folderName != L"..") {
                 ItemCategory folderCategory = ItemCategory::UNCLASSIFIED;
                 std::string keyFolderName = wstringToUtf8(folderName);
 
-                if (keyFolderName.empty() && !folderName.empty()){ // UTF-8 conversion failed for folder name
-                     std::wcerr << L"WebClassifier::performSearch: Failed to convert folder name '" << folderName << L"' to UTF-8 for cache key." << std::endl;
+                if (keyFolderName.empty() && !folderName.empty()){
+                     LOG_ERROR(L"WebClassifier::performSearch: Failed to convert folder name '" + folderName + L"' to UTF-8 for cache key.");
                 } else if (classificationCache.contains(keyFolderName)) {
                     folderCategory = getCachedCategory(folderName);
-                    std::wcout << L"  Item '" << item.name << L"' unclassified. [Cache HIT for parent folder: '" << folderName << L"'] -> " << categoryToString(folderCategory) << std::endl;
+                     LOG_INFO(L"  Item '" + item.name + L"' unclassified. [Cache HIT for parent folder: '" + folderName + L"'] -> " + std::wstring(categoryToString(folderCategory).begin(), categoryToString(folderCategory).end()));
                 } else {
-                    std::wcout << L"  Item '" << item.name << L"' unclassified. [Web SEARCH for parent folder: '" << folderName << L"']" << std::endl;
-                    std::wstring searchQueryFolder = folderName + L" game software application program category"; // Generic query for folder
+                    LOG_INFO(L"  Item '" + item.name + L"' unclassified. [Web SEARCH for parent folder: '" + folderName + L"']");
+                    std::wstring searchQueryFolder = folderName + L" game software application program category";
                     std::string encodedQueryFolder = urlEncode(searchQueryFolder);
 
                     if (!encodedQueryFolder.empty() || searchQueryFolder.empty()) {
                         std::string urlFolder = "https://www.google.com/search?q=" + encodedQueryFolder + "&hl=en";
-                        // Throttling logic (separate from item search throttling to be safe)
                         static auto lastRequestTimeFolder = std::chrono::steady_clock::now() - std::chrono::seconds(5);
                         auto nowFolder = std::chrono::steady_clock::now();
                         auto timeSinceLastRequestFolder = std::chrono::duration_cast<std::chrono::milliseconds>(nowFolder - lastRequestTimeFolder);
                         const long long minIntervalMs = 2000;
                         if (timeSinceLastRequestFolder.count() < minIntervalMs) {
+                            LOG_DEBUG(L"WebClassifier::performSearch: Throttling folder search. Sleeping for " + std::to_wstring(minIntervalMs - timeSinceLastRequestFolder.count()) + L"ms.");
                              std::this_thread::sleep_for(std::chrono::milliseconds(minIntervalMs - timeSinceLastRequestFolder.count()));
                         }
                         lastRequestTimeFolder = std::chrono::steady_clock::now();
@@ -582,31 +464,32 @@ ItemCategory WebClassifier::performSearch(const DesktopItem& item, std::string& 
                         std::string folderHtmlResponse;
                         bool folderSuccess = executeHttpGet(urlFolder, folderHtmlResponse);
                         if (folderSuccess && !folderHtmlResponse.empty()) {
-                            folderCategory = classifyItemFromHtml(folderHtmlResponse, folderName); // Classify based on folder's content
+                            folderCategory = classifyItemFromHtml(folderHtmlResponse, folderName);
+                            LOG_INFO(L"WebClassifier::performSearch: Folder '" + folderName + L"' classified as " + std::wstring(categoryToString(folderCategory).begin(), categoryToString(folderCategory).end()) + L" from web.");
                             if (!outHtmlResponse.empty()) outHtmlResponse += "\n==== Folder Search Response (" + wstringToUtf8(folderName) + ") ====\n";
                             outHtmlResponse += folderHtmlResponse;
                         } else {
+                            LOG_ERROR(L"WebClassifier::performSearch: executeHttpGet failed or got empty response for folder '" + folderName + L"'. URL: " + std::wstring(urlFolder.begin(), urlFolder.end()));
                             folderCategory = ItemCategory::UNCLASSIFIED;
                         }
-                        updateCache(folderName, folderCategory); // Cache folder's classification
+                        updateCache(folderName, folderCategory);
                     } else {
+                        LOG_ERROR(L"WebClassifier::performSearch: URL encoding failed for folder query '" + searchQueryFolder + L"'.");
                         folderCategory = ItemCategory::UNCLASSIFIED;
-                        updateCache(folderName, folderCategory); // Cache as UNCLASSIFIED if encoding fails for folder name
+                        updateCache(folderName, folderCategory);
                     }
                 }
 
-                // If folder search yielded GAME or PROGRAM, use it for the item.
                 if (folderCategory == ItemCategory::GAME || folderCategory == ItemCategory::PROGRAM) {
-                    // std::wcout << L"  Using category '" << categoryToString(folderCategory) << L"' from parent folder '" << folderName << L"' for item '" << item.name << L"'." << std::endl;
-                    return folderCategory; // Return folder's category for the item
+                    LOG_INFO(L"  Using category '" + std::wstring(categoryToString(folderCategory).begin(), categoryToString(folderCategory).end()) + L"' from parent folder '" + folderName + L"' for item '" + item.name + L"'.");
+                    return folderCategory;
                 }
             }
         }
     }
-    return category; // Return original item's category (could be UNCLASSIFIED)
+    return category;
 #else
-    // Non-Windows stub for performSearch
-    // std::wcerr << L"Warning: performSearch is a stub on non-Windows." << std::endl;
+    // LOG_DEBUG(L"WebClassifier::performSearch: Using non-Windows stub for item: " + item.name);
     std::string tempItemName;
     for(wchar_t wc : item.name) tempItemName += static_cast<char>(wc);
     outHtmlResponse = "<html><body>Mock search results for " + tempItemName + ". Keywords: game, application, software. This is a stub for an item.</body></html>";
@@ -630,7 +513,9 @@ ItemCategory WebClassifier::performSearch(const DesktopItem& item, std::string& 
 // Stubs for path helpers for non-Windows to allow compilation
 std::wstring WebClassifier::getParentFolderPath(const std::wstring& itemPath) {
     if (itemPath.empty()) return L"";
-    try { std::filesystem::path p(itemPath); if (p.has_parent_path()) return p.parent_path().wstring(); } catch(...) {}
+    try { std::filesystem::path p(itemPath); if (p.has_parent_path()) return p.parent_path().wstring(); } catch(const std::exception& e) {
+        LOG_ERROR(L"WebClassifier::getParentFolderPath (stub): Filesystem error for path '" + itemPath + L"': " + std::wstring(e.what(), e.what() + strlen(e.what())));
+    }
     size_t last_slash_idx = itemPath.rfind(L'/');
     if (std::wstring::npos == last_slash_idx) last_slash_idx = itemPath.rfind(L'\\');
     if (std::wstring::npos != last_slash_idx) return itemPath.substr(0, last_slash_idx);
@@ -638,9 +523,11 @@ std::wstring WebClassifier::getParentFolderPath(const std::wstring& itemPath) {
 }
 std::wstring WebClassifier::getFolderName(const std::wstring& folderPath) {
     if (folderPath.empty()) return L"";
-    try { std::filesystem::path p(folderPath); if (p.has_filename()) return p.filename().wstring(); } catch(...) {}
+    try { std::filesystem::path p(folderPath); if (p.has_filename()) return p.filename().wstring(); } catch(const std::exception& e) {
+         LOG_ERROR(L"WebClassifier::getFolderName (stub): Filesystem error for path '" + folderPath + L"': " + std::wstring(e.what(), e.what() + strlen(e.what())));
+    }
     size_t last_slash_idx = folderPath.rfind(L'/');
-    if (std::wstring::npos == last_slash_idx) last_slash_idx = folderPath.rfind(L'\\'); // Corrected from itemPath
+    if (std::wstring::npos == last_slash_idx) last_slash_idx = folderPath.rfind(L'\\');
     if (std::wstring::npos != last_slash_idx) return folderPath.substr(last_slash_idx + 1);
     return folderPath;
 }

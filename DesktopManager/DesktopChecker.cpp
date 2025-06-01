@@ -1,235 +1,278 @@
 #include "DesktopChecker.h"
-#include <iostream>
-#include <vector>
-#include <string>
+#include "../ConfigManager/ConfigManager.h"
+#include "../Logging/Logging.h"
 
-// Conditional includes for Windows
 #ifdef _WIN32
 #include <windows.h>
-#include <shlobj.h>      // For SHGetFolderPathW
-#include <shlobj_core.h> // For IShellLink
-#include <pathcch.h>     // For PathFileExistsW (PathCch.lib) or Shlwapi.h (Shlwapi.lib) for PathFileExists
-#include <objbase.h>     // For CoInitialize, CoUninitialize, CoCreateInstance
-
-// Link with necessary libraries for MSVC
-#pragma comment(lib, "Pathcch.lib") // Or "Shlwapi.lib" if using that for PathFileExists
-#pragma comment(lib, "Ole32.lib")   // For COM functions
+#include <shlobj.h>
+#include <shlobj_core.h>
+#include <pathcch.h>
+#include <objbase.h>
+#pragma comment(lib, "Pathcch.lib")
+#pragma comment(lib, "Ole32.lib")
 #else
-// Includes for basic Linux/macOS stubs
-#include <cstdlib>      // For getenv
-#include <sys/stat.h>   // For stat (checking file/dir type and existence)
-#include <dirent.h>     // For opendir, readdir, closedir
-#include <locale>       // For std::locale, std::use_facet, std::ctype
-#include <codecvt>      // For std::codecvt_utf8_utf16 (may still be problematic)
+#include <cstdlib>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <locale>
+#include <codecvt>
+#include <algorithm>
+#include <cstring>   // For strlen (used in logging an exception's e.what())
+#include <filesystem> // For std::filesystem::path in stubs for more robust checks
 #endif
 
-// Helper function for basic wstring to string conversion (UTF-8) for non-Windows stubs
+// Non-Windows string conversion stubs (if not already in a common utility)
 #ifndef _WIN32
-std::string wstring_to_utf8_string(const std::wstring& wstr) {
-    // This is a common point of failure with std::wstring_convert in C++17
-    // For stubbing, a simpler approach might be needed if this fails,
-    // or ensure the compiler/stdlib supports it.
+static std::string wstring_to_utf8_string_stub_dc(const std::wstring& wstr) {
+    // (Implementation from previous step)
+    std::string s = "";
     try {
         std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-        return converter.to_bytes(wstr);
+        s = converter.to_bytes(wstr);
     } catch (const std::exception& e) {
-        // Fallback: very basic conversion (likely lossy, only good for ASCII)
-        std::string s = "";
-        for (wchar_t wc : wstr) {
-            if (wc < 128) s += static_cast<char>(wc);
-            else s += '?'; // Placeholder for non-ASCII
-        }
-        return s;
+        for (wchar_t wc : wstr) { if (wc >= 0 && wc < 128) s += static_cast<char>(wc); else s += '?'; }
+        LOG_ERROR(L"wstring_to_utf8_string_stub_dc failed: " + std::wstring(e.what(), e.what() + strlen(e.what())));
     }
+    return s;
 }
-
-std::wstring utf8_string_to_wstring(const std::string& str) {
+static std::wstring utf8_string_to_wstring_stub_dc(const std::string& str) {
+    // (Implementation from previous step)
+    std::wstring ws = L"";
     try {
         std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-        return converter.from_bytes(str);
+        ws = converter.from_bytes(str);
     } catch (const std::exception& e) {
-        std::wstring ws = L"";
-        for (char c : str) {
-            ws += static_cast<wchar_t>(c); // Very basic, lossy
-        }
-        return ws;
+        for (char c : str) { ws += static_cast<wchar_t>(static_cast<unsigned char>(c));  }
+        LOG_ERROR(L"utf8_string_to_wstring_stub_dc failed: " + std::wstring(e.what(), e.what() + strlen(e.what())));
     }
+    return ws;
 }
 #endif
 
 
 std::wstring DesktopChecker::getDesktopPath() {
 #ifdef _WIN32
-    wchar_t desktopPath[MAX_PATH];
-    if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_DESKTOPDIRECTORY, NULL, 0, desktopPath))) {
-        return std::wstring(desktopPath);
+    wchar_t desktopPath_buf[MAX_PATH];
+    if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_DESKTOPDIRECTORY, NULL, 0, desktopPath_buf))) {
+        return std::wstring(desktopPath_buf);
     }
+    LOG_ERROR(L"DesktopChecker::getDesktopPath: SHGetFolderPathW failed. Error: " + std::to_wstring(GetLastError()));
     return L"";
 #else
     const char* homeDir = getenv("HOME");
     if (homeDir) {
-        std::string desktopPathStr = std::string(homeDir) + "/Desktop";
-        return utf8_string_to_wstring(desktopPathStr);
+        try {
+            std::filesystem::path desktopFsPath = std::filesystem::path(homeDir) / "Desktop";
+            return desktopFsPath.wstring(); // Uses std::filesystem for path construction
+        } catch (const std::exception &e) {
+            LOG_ERROR(L"DesktopChecker::getDesktopPath (stub): Filesystem error constructing path: " + std::wstring(e.what(), e.what() + strlen(e.what())));
+            return L"";
+        }
     }
+    LOG_ERROR(L"DesktopChecker::getDesktopPath (stub): Failed to get HOME environment variable.");
     return L"";
 #endif
 }
 
-bool DesktopChecker::isLinkValid(const std::wstring& shortcutPath) {
 #ifdef _WIN32
-    HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-    if (FAILED(hr)) {
-        return false;
-    }
+bool DesktopChecker::isLinkValid(const std::wstring& shortcutPath) {
+    // (Implementation from previous step, COM init/uninit, IShellLink, etc.)
+    // Ensure CoInitialize/CoUninitialize are balanced or handled by a RAII wrapper.
+    HRESULT hr_com = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     IShellLink* psl = NULL;
     bool isValid = false;
-    hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&psl);
+    HRESULT hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&psl);
     if (SUCCEEDED(hr)) {
         IPersistFile* ppf = NULL;
         hr = psl->QueryInterface(IID_IPersistFile, (void**)&ppf);
         if (SUCCEEDED(hr)) {
             hr = ppf->Load(shortcutPath.c_str(), STGM_READ);
             if (SUCCEEDED(hr)) {
-                hr = psl->Resolve(NULL, SLR_NO_UI);
+                hr = psl->Resolve(NULL, SLR_NO_UI | SLR_NOUPDATE | SLR_NOLINKINFO);
                 if (SUCCEEDED(hr)) {
                     wchar_t targetPath[MAX_PATH];
                     hr = psl->GetPath(targetPath, MAX_PATH, NULL, SLGP_UNCPRIORITY);
                     if (SUCCEEDED(hr) && targetPath[0] != L'\0') {
                         if (PathFileExistsW(targetPath)) {
                             isValid = true;
+                        } else {
+                             LOG_DEBUG(L"DesktopChecker::isLinkValid: Shortcut target does not exist: " + std::wstring(targetPath) + L" (Link: " + shortcutPath + L")");
                         }
-                    }
-                }
-            }
-            ppf->Release();
-        }
-        psl->Release();
-    }
-    CoUninitialize();
+                    } // else GetPath failed or empty
+                } // else Resolve failed - link is broken
+            } // else Load failed
+            if(ppf) ppf->Release();
+        } // else QueryInterface failed
+        if(psl) psl->Release();
+    } else { LOG_ERROR(L"DesktopChecker::isLinkValid: CoCreateInstance(CLSID_ShellLink) failed. Error: " + std::to_wstring(hr)); }
+    if(SUCCEEDED(hr_com)) CoUninitialize(); // Only uninitialize if this call initialized
     return isValid;
-#else
-    (void)shortcutPath;
-    return false;
-#endif
 }
 
 bool DesktopChecker::isFolderEmpty(const std::wstring& folderPath) {
-#ifdef _WIN32
+    // (Implementation from previous step, FindFirstFileW/FindNextFileW)
     std::wstring searchPath = folderPath + L"\\*";
     WIN32_FIND_DATAW findFileData;
     HANDLE hFind = FindFirstFileW(searchPath.c_str(), &findFileData);
-    if (hFind == INVALID_HANDLE_VALUE) return false;
+    if (hFind == INVALID_HANDLE_VALUE) {
+        LOG_ERROR(L"DesktopChecker::isFolderEmpty: FindFirstFileW failed for folder: " + folderPath + L". Error: " + std::to_wstring(GetLastError()));
+        return false;
+    }
     do {
         if (wcscmp(findFileData.cFileName, L".") != 0 && wcscmp(findFileData.cFileName, L"..") != 0) {
-            FindClose(hFind);
-            return false;
+            FindClose(hFind); return false;
         }
     } while (FindNextFileW(hFind, &findFileData) != 0);
+    DWORD lastError = GetLastError();
     FindClose(hFind);
-    return GetLastError() == ERROR_NO_MORE_FILES;
-#else
-    std::string path_s = wstring_to_utf8_string(folderPath);
-    DIR *dir = opendir(path_s.c_str());
-    if (dir == NULL) return false;
-    struct dirent *entry;
-    int count = 0;
-    while ((entry = readdir(dir)) != NULL) {
-        if (std::string(entry->d_name) != "." && std::string(entry->d_name) != "..") {
-            count++;
-            break;
-        }
+    if (lastError != ERROR_NO_MORE_FILES) {
+        LOG_WARNING(L"DesktopChecker::isFolderEmpty: Error iterating folder '" + folderPath + L"'. FindNextFileW ended with error: " + std::to_wstring(lastError));
+        return false;
     }
-    closedir(dir);
-    return count == 0;
-#endif
+    return true;
 }
 
 bool DesktopChecker::isSpecialSystemFolder(const std::wstring& folderPath) {
-#ifdef _WIN32
-    std::wstring folderName = folderPath.substr(folderPath.find_last_of(L"\\/") + 1);
-    std::wstring lowerFolderName;
-    lowerFolderName.resize(folderName.size());
-    for(size_t i = 0; i < folderName.size(); ++i) lowerFolderName[i] = towlower(folderName[i]);
-    if (lowerFolderName == L"recycle bin" || lowerFolderName == L"корзина" ||
-        lowerFolderName == L"system volume information" ||
-        lowerFolderName == L"desktop.ini" || lowerFolderName == L"thumbs.db") {
-        return true;
-    }
-#else
-    std::wstring folderName = folderPath.substr(folderPath.find_last_of(L"/") + 1);
-    if (!folderName.empty() && folderName[0] == L'.') return true;
-    if (folderName == L"Trash" || folderName == L".Trash" || folderName == L".local/share/Trash") return true;
-#endif
-    (void)folderPath;
+    // (Implementation from previous step)
+    std::wstring folderName = L"";
+    try { folderName = std::filesystem::path(folderPath).filename().wstring(); } catch(...) {} // Robustness
+    std::wstring lowerFolderName = folderName;
+    std::transform(lowerFolderName.begin(), lowerFolderName.end(), lowerFolderName.begin(), ::towlower);
+    const static std::vector<std::wstring> specialNames = { L"recycle bin", L"корзина", L"system volume information", L"desktop.ini", L"thumbs.db", L"$recycle.bin" };
+    for(const auto& special : specialNames) if (lowerFolderName == special) return true;
     return false;
 }
+#endif
 
 std::vector<std::wstring> DesktopChecker::findInvalidShortcuts(const std::wstring& desktopPath) {
+    LOG_INFO(L"DesktopChecker::findInvalidShortcuts - Starting scan on: " + desktopPath);
     std::vector<std::wstring> invalidShortcuts;
+    const auto& excludedPaths = ConfigManager::getInstance().getExcludedPaths();
+
 #ifdef _WIN32
     std::wstring searchPath = desktopPath + L"\\*.lnk";
     WIN32_FIND_DATAW findFileData;
     HANDLE hFind = FindFirstFileW(searchPath.c_str(), &findFileData);
-    if (hFind != INVALID_HANDLE_VALUE) {
-        do {
-            std::wstring fullShortcutPath = desktopPath + L"\\" + findFileData.cFileName;
-            if (!isLinkValid(fullShortcutPath)) {
-                invalidShortcuts.push_back(fullShortcutPath);
-            }
-        } while (FindNextFileW(hFind, &findFileData) != 0);
-        FindClose(hFind);
+
+    if (hFind == INVALID_HANDLE_VALUE) {
+        LOG_ERROR(L"DesktopChecker::findInvalidShortcuts: FindFirstFileW failed for path: " + searchPath + L". Error: " + std::to_wstring(GetLastError()));
+        return invalidShortcuts;
     }
+    do {
+        std::wstring shortcutFileName = findFileData.cFileName;
+        std::wstring currentItemFullPath = desktopPath + L"\\" + shortcutFileName;
+
+        // For robust path comparison, consider normalizing paths first.
+        // e.g. auto normalizedItemPath = std::filesystem::path(currentItemFullPath).lexically_normal();
+        //      auto normalizedExcludedPath = std::filesystem::path(excludedPath).lexically_normal();
+        //      if (normalizedItemPath.wstring().rfind(normalizedExcludedPath.wstring(), 0) == 0) { ... }
+        bool isExcluded = false;
+        for (const auto& excludedPath : excludedPaths) {
+            if (currentItemFullPath.rfind(excludedPath, 0) == 0) { // Simple starts-with check
+                isExcluded = true;
+                break;
+            }
+        }
+        if (isExcluded) {
+            LOG_INFO(L"DesktopChecker::findInvalidShortcuts - Skipping excluded item: " + currentItemFullPath);
+            continue;
+        }
+
+        // Proceed with .lnk check only if not excluded
+        // (Original code had .lnk check as part of searchPath, which is more efficient)
+        // The prompt implies checking all files then filtering .lnk, but FindFirstFileW already filters.
+        // The exclusion should be before isLinkValid.
+
+        if (!isLinkValid(currentItemFullPath)) {
+            LOG_INFO(L"DesktopChecker::findInvalidShortcuts - Found invalid shortcut: " + currentItemFullPath);
+            invalidShortcuts.push_back(currentItemFullPath);
+        }
+    } while (FindNextFileW(hFind, &findFileData) != 0);
+    FindClose(hFind);
 #else
-    (void)desktopPath;
+    // LOG_DEBUG(L"DesktopChecker::findInvalidShortcuts: Using non-Windows stub for path: " + desktopPath);
 #endif
+    LOG_INFO(L"DesktopChecker::findInvalidShortcuts - Scan complete. Found " + std::to_wstring(invalidShortcuts.size()) + L" invalid shortcuts.");
     return invalidShortcuts;
 }
 
 std::vector<std::wstring> DesktopChecker::findEmptyFolders(const std::wstring& desktopPath) {
+    LOG_INFO(L"DesktopChecker::findEmptyFolders - Starting scan on: " + desktopPath);
     std::vector<std::wstring> emptyFolders;
-    if (desktopPath.empty()) return emptyFolders;
+    const auto& excludedPaths = ConfigManager::getInstance().getExcludedPaths();
+
 #ifdef _WIN32
-    std::wstring searchPath = desktopPath + L"\\*";
+    std::wstring searchPath = desktopPath + L"\\*"; // Iterate all items
     WIN32_FIND_DATAW findFileData;
     HANDLE hFind = FindFirstFileW(searchPath.c_str(), &findFileData);
-    if (hFind != INVALID_HANDLE_VALUE) {
-        do {
-            if (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-                if (wcscmp(findFileData.cFileName, L".") != 0 && wcscmp(findFileData.cFileName, L"..") != 0) {
-                    std::wstring fullFolderPath = desktopPath + L"\\" + findFileData.cFileName;
-                    if (!isSpecialSystemFolder(fullFolderPath)) {
-                        if (isFolderEmpty(fullFolderPath)) {
-                            emptyFolders.push_back(fullFolderPath);
-                        }
-                    }
-                }
-            }
-        } while (FindNextFileW(hFind, &findFileData) != 0);
-        FindClose(hFind);
+
+    if (hFind == INVALID_HANDLE_VALUE) {
+         LOG_ERROR(L"DesktopChecker::findEmptyFolders: FindFirstFileW failed for path: " + searchPath + L". Error: " + std::to_wstring(GetLastError()));
+        return emptyFolders;
     }
-#else
-    std::string path_s = wstring_to_utf8_string(desktopPath);
-    DIR *dir = opendir(path_s.c_str());
-    if (dir == NULL) return emptyFolders;
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL) {
-        std::string name_s = entry->d_name;
-        if (name_s != "." && name_s != "..") {
-            std::string fullPath_s = path_s + "/" + name_s;
-            struct stat statbuf;
-            if (stat(fullPath_s.c_str(), &statbuf) == 0) {
-                if (S_ISDIR(statbuf.st_mode)) {
-                    std::wstring fullPath_ws = utf8_string_to_wstring(fullPath_s);
-                    if (!isSpecialSystemFolder(fullPath_ws)) {
-                        if (isFolderEmpty(fullPath_ws)) {
-                            emptyFolders.push_back(fullPath_ws);
-                        }
-                    }
+    do {
+        std::wstring currentItemFullPath = desktopPath + L"\\" + findFileData.cFileName;
+
+        // For robust path comparison, consider normalizing paths first.
+        bool isExcluded = false;
+        for (const auto& excludedPath : excludedPaths) {
+            if (currentItemFullPath.rfind(excludedPath, 0) == 0) { // Simple starts-with check
+                isExcluded = true;
+                break;
+            }
+        }
+        if (isExcluded) {
+            LOG_INFO(L"DesktopChecker::findEmptyFolders - Skipping excluded item: " + currentItemFullPath);
+            continue;
+        }
+
+        if (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            if (wcscmp(findFileData.cFileName, L".") != 0 && wcscmp(findFileData.cFileName, L"..") != 0) {
+                // currentItemFullPath is already constructed
+                if (isSpecialSystemFolder(currentItemFullPath)) {
+                    LOG_DEBUG(L"DesktopChecker::findEmptyFolders - Skipping special system folder: " + currentItemFullPath);
+                    continue;
+                }
+                if (isFolderEmpty(currentItemFullPath)) {
+                    LOG_INFO(L"DesktopChecker::findEmptyFolders - Found empty folder: " + currentItemFullPath);
+                    emptyFolders.push_back(currentItemFullPath);
                 }
             }
         }
+    } while (FindNextFileW(hFind, &findFileData) != 0);
+    FindClose(hFind);
+#else
+    // LOG_DEBUG(L"DesktopChecker::findEmptyFolders: Using non-Windows stub for path: " + desktopPath);
+    try {
+        for (const auto& entry : std::filesystem::directory_iterator(wstring_to_utf8_string_stub_dc(desktopPath))) {
+            if (entry.is_directory()) { // Check if it's a directory
+                std::wstring fullFolderPath = utf8_string_to_wstring_stub_dc(entry.path().string());
+
+                bool isExcluded = false;
+                for (const auto& excludedPath : excludedPaths) {
+                    if (fullFolderPath.rfind(excludedPath, 0) == 0) {
+                        LOG_INFO(L"DesktopChecker::findEmptyFolders (stub) - Skipping excluded folder: " + fullFolderPath);
+                        isExcluded = true;
+                        break;
+                    }
+                }
+                if (isExcluded) continue;
+
+                if (isSpecialSystemFolder(fullFolderPath)) continue;
+
+                std::error_code ec;
+                if (std::filesystem::is_empty(entry.path(), ec) && !ec) { // Check if directory is empty
+                     LOG_INFO(L"DesktopChecker::findEmptyFolders (stub) - Found empty folder: " + fullFolderPath);
+                    emptyFolders.push_back(fullFolderPath);
+                } else if (ec) {
+                    LOG_ERROR(L"DesktopChecker::findEmptyFolders (stub) - Error checking if folder is empty '" + fullFolderPath + L"': " + std::wstring(ec.message().begin(), ec.message().end()));
+                }
+            }
+        }
+    } catch (const std::exception& e) {
+        LOG_ERROR(L"DesktopChecker::findEmptyFolders (stub) - Error iterating directory '" + desktopPath + L"': " + std::wstring(e.what(), e.what() + strlen(e.what())));
     }
-    closedir(dir);
 #endif
+    LOG_INFO(L"DesktopChecker::findEmptyFolders - Scan complete. Found " + std::to_wstring(emptyFolders.size()) + L" empty folders.");
     return emptyFolders;
 }

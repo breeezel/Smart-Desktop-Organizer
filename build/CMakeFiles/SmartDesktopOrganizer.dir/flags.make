@@ -4,6 +4,6 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES =
 
-CXX_INCLUDES = -I/app
+CXX_INCLUDES = -I/app -I/app/libs -I/app/src/mfc -I/app/DesktopManager -I/app/WebClassifier -I/app/ConfigManager -I/app/Logging
 
 CXX_FLAGS = -std=gnu++17

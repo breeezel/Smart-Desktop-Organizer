@@ -69,24 +69,38 @@ include CMakeFiles/SmartDesktopOrganizer.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/SmartDesktopOrganizer.dir/flags.make
 
-CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/flags.make
-CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.o: /app/src/main.cpp
-CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.o -MF CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.o.d -o CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.o -c /app/src/main.cpp
+CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/flags.make
+CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.o: /app/src/mfc/SmartDesktopOrganizerApp.cpp
+CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.o -MF CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.o.d -o CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.o -c /app/src/mfc/SmartDesktopOrganizerApp.cpp
 
-CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /app/src/main.cpp > CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.i
+CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /app/src/mfc/SmartDesktopOrganizerApp.cpp > CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.i
 
-CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /app/src/main.cpp -o CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.s
+CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /app/src/mfc/SmartDesktopOrganizerApp.cpp -o CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.s
+
+CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/flags.make
+CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.o: /app/src/mfc/MainFrm.cpp
+CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.o -MF CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.o.d -o CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.o -c /app/src/mfc/MainFrm.cpp
+
+CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /app/src/mfc/MainFrm.cpp > CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.i
+
+CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /app/src/mfc/MainFrm.cpp -o CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.s
 
 CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopChecker.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/flags.make
 CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopChecker.cpp.o: /app/DesktopManager/DesktopChecker.cpp
 CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopChecker.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopChecker.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopChecker.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopChecker.cpp.o -MF CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopChecker.cpp.o.d -o CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopChecker.cpp.o -c /app/DesktopManager/DesktopChecker.cpp
 
 CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopChecker.cpp.i: cmake_force
@@ -100,7 +114,7 @@ CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopChecker.cpp.s: cmake_
 CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopInfo.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/flags.make
 CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopInfo.cpp.o: /app/DesktopManager/DesktopInfo.cpp
 CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopInfo.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopInfo.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopInfo.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopInfo.cpp.o -MF CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopInfo.cpp.o.d -o CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopInfo.cpp.o -c /app/DesktopManager/DesktopInfo.cpp
 
 CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopInfo.cpp.i: cmake_force
@@ -114,7 +128,7 @@ CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopInfo.cpp.s: cmake_for
 CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/flags.make
 CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.o: /app/DesktopManager/DesktopSorter.cpp
 CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.o -MF CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.o.d -o CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.o -c /app/DesktopManager/DesktopSorter.cpp
 
 CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.i: cmake_force
@@ -125,10 +139,24 @@ CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.s: cmake_f
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /app/DesktopManager/DesktopSorter.cpp -o CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.s
 
+CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/flags.make
+CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.o: /app/DesktopManager/DesktopFileOperations.cpp
+CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.o -MF CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.o.d -o CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.o -c /app/DesktopManager/DesktopFileOperations.cpp
+
+CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /app/DesktopManager/DesktopFileOperations.cpp > CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.i
+
+CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /app/DesktopManager/DesktopFileOperations.cpp -o CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.s
+
 CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/flags.make
 CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o: /app/WebClassifier/WebClassifier.cpp
 CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o -MF CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o.d -o CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o -c /app/WebClassifier/WebClassifier.cpp
 
 CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.i: cmake_force
@@ -139,25 +167,61 @@ CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.s: cmake_fo
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /app/WebClassifier/WebClassifier.cpp -o CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.s
 
+CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/flags.make
+CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.o: /app/ConfigManager/ConfigManager.cpp
+CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.o -MF CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.o.d -o CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.o -c /app/ConfigManager/ConfigManager.cpp
+
+CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /app/ConfigManager/ConfigManager.cpp > CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.i
+
+CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /app/ConfigManager/ConfigManager.cpp -o CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.s
+
+CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/flags.make
+CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.o: /app/Logging/Logging.cpp
+CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.o: CMakeFiles/SmartDesktopOrganizer.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.o -MF CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.o.d -o CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.o -c /app/Logging/Logging.cpp
+
+CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /app/Logging/Logging.cpp > CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.i
+
+CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /app/Logging/Logging.cpp -o CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.s
+
 # Object files for target SmartDesktopOrganizer
 SmartDesktopOrganizer_OBJECTS = \
-"CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.o" \
+"CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.o" \
+"CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.o" \
 "CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopChecker.cpp.o" \
 "CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopInfo.cpp.o" \
 "CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.o" \
-"CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o"
+"CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.o" \
+"CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o" \
+"CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.o" \
+"CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.o"
 
 # External object files for target SmartDesktopOrganizer
 SmartDesktopOrganizer_EXTERNAL_OBJECTS =
 
-SmartDesktopOrganizer: CMakeFiles/SmartDesktopOrganizer.dir/src/main.cpp.o
+SmartDesktopOrganizer: CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/SmartDesktopOrganizerApp.cpp.o
+SmartDesktopOrganizer: CMakeFiles/SmartDesktopOrganizer.dir/src/mfc/MainFrm.cpp.o
 SmartDesktopOrganizer: CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopChecker.cpp.o
 SmartDesktopOrganizer: CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopInfo.cpp.o
 SmartDesktopOrganizer: CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopSorter.cpp.o
+SmartDesktopOrganizer: CMakeFiles/SmartDesktopOrganizer.dir/DesktopManager/DesktopFileOperations.cpp.o
 SmartDesktopOrganizer: CMakeFiles/SmartDesktopOrganizer.dir/WebClassifier/WebClassifier.cpp.o
+SmartDesktopOrganizer: CMakeFiles/SmartDesktopOrganizer.dir/ConfigManager/ConfigManager.cpp.o
+SmartDesktopOrganizer: CMakeFiles/SmartDesktopOrganizer.dir/Logging/Logging.cpp.o
 SmartDesktopOrganizer: CMakeFiles/SmartDesktopOrganizer.dir/build.make
 SmartDesktopOrganizer: CMakeFiles/SmartDesktopOrganizer.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking CXX executable SmartDesktopOrganizer"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/app/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Linking CXX executable SmartDesktopOrganizer"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/SmartDesktopOrganizer.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

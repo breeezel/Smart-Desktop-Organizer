@@ -1,16 +1,17 @@
 #ifndef DESKTOPSORTER_H
 #define DESKTOPSORTER_H
 
-#include "DesktopInfo.h" // For DesktopItem
-// #include "../WebClassifier/WebClassifier.h" // REMOVE full include
+#include "DesktopInfo.h"
+#include "../WebClassifier/WebClassifier.h"
+#include "../Logging/Logging.h" // For LOG_ macros if used in header, or for clarity
+
 #include <string>
 #include <vector>
-#include <memory> // For std::unique_ptr
+#include <memory>
 
-// Forward declaration to break include cycle
-class WebClassifier;
+// Forward declaration for WebClassifier is no longer needed as full include is used by unique_ptr logic
+// class WebClassifier;
 
-// ItemCategory is defined here
 enum class ItemCategory {
     FOLDER,
     GAME,
@@ -26,13 +27,13 @@ enum class ItemCategory {
 class DesktopSorter {
 public:
     DesktopSorter();
-    ~DesktopSorter(); // Required for std::unique_ptr with forward-declared type
+    ~DesktopSorter();
 
     void setItemPosition(const std::wstring& itemName, int x, int y);
     ItemCategory classifyItem(const DesktopItem& item);
 
 private:
-    std::unique_ptr<WebClassifier> m_webClassifier; // Use unique_ptr
+    std::unique_ptr<WebClassifier> m_webClassifier;
 
 #ifdef _WIN32
     HWND getDesktopListViewHandle();
