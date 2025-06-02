@@ -17,6 +17,7 @@ set(APP_SOURCES
     WebClassifier/WebClassifier.cpp
     ConfigManager/ConfigManager.cpp
     Logging/Logging.cpp
+    DesktopArrangement/DesktopLayoutManager.cpp # Added DesktopLayoutManager
 )
 
 # WIN32 creates a Windows subsystem executable (no console window)
@@ -33,7 +34,8 @@ target_include_directories(SmartDesktopOrganizer PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/DesktopManager"
     "${CMAKE_CURRENT_SOURCE_DIR}/WebClassifier"
     "${CMAKE_CURRENT_SOURCE_DIR}/ConfigManager"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Logging" # Added Logging
+    "${CMAKE_CURRENT_SOURCE_DIR}/Logging"
+    "${CMAKE_CURRENT_SOURCE_DIR}/DesktopArrangement" # Added DesktopArrangement
 )
 
 # MFC Configuration for MSVC (Visual Studio)

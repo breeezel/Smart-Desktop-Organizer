@@ -1,11 +1,11 @@
 #include "WebClassifier.h"
-// Other necessary includes are already present from previous steps
-// (DesktopSorter.h, DesktopInfo.h, json.hpp, WinINet, filesystem, iostream, thread, chrono, etc.)
-// ConfigManager.h and Logging.h are now included via WebClassifier.h indirectly or directly.
+#include "DesktopManager/ItemTypes.h"    // Changed from DesktopSorter.h
+// DesktopInfo.h is included via WebClassifier.h
+// ConfigManager.h and Logging.h are included via WebClassifier.h
 
 // Ensure these are accessible if WebClassifier.h doesn't bring them transitively for .cpp
-#include "ConfigManager/ConfigManager.h"
-#include "Logging/Logging.h"
+// #include "ConfigManager/ConfigManager.h" // No longer needed directly if WebClassifier.h includes it
+// #include "Logging/Logging.h"             // No longer needed directly if WebClassifier.h includes it
 
 
 // Static helper toLower_internal and wstringToUtf8 remain the same

@@ -1,14 +1,15 @@
 #pragma once
 #include <string>
 #include <vector>
-#include "DesktopManager/DesktopSorter.h"
-#include "DesktopManager/DesktopInfo.h"
-#include "ConfigManager/ConfigManager.h" // Include ConfigManager
-#include "Logging/Logging.h"             // For LOG_ macros
+// #include "DesktopManager/DesktopSorter.h" // Replaced
+#include "DesktopManager/ItemTypes.h"    // Now include ItemTypes.h for ItemCategory
+#include "DesktopManager/DesktopInfo.h" // For DesktopItem
+#include "ConfigManager/ConfigManager.h"
+#include "Logging/Logging.h"
 
 #ifdef _WIN32
 #include <windows.h>
-#include "libs/nlohmann_json/json.hpp"
+#include "nlohmann_json/json.hpp" // Corrected path from "libs/..."
 using json = nlohmann::json;
 #endif
 

@@ -3,31 +3,41 @@
 
 #include <vector>
 #include <string>
-#include <filesystem> // For std::filesystem::file_time_type
+#include <filesystem>
+#include "ItemTypes.h"
 
 #ifdef _WIN32
-#include <windows.h> // For HWND, POINT, FILETIME (though FILETIME usage in struct is removed)
+#include <windows.h>
 #endif
-
-// Forward declaration for DesktopChecker to get desktop path
-// class DesktopChecker;
 
 struct DesktopItem {
     std::wstring path;
     std::wstring name;
     enum class ItemType { FILE, FOLDER, SHORTCUT, OTHER };
     ItemType type;
-    int x, y;
-    std::filesystem::file_time_type lastModified;
 
-    // Default constructor
-    DesktopItem() : x(0), y(0), type(ItemType::OTHER), lastModified(std::filesystem::file_time_type::min()) {}
+    // Original coordinates read from the desktop
+    int original_x = 0;
+    int original_y = 0;
+
+    // Target coordinates after layout calculation
+    int x = 0;
+    int y = 0;
+
+    std::filesystem::file_time_type lastModified;
+    ItemCategory category;
+
+    DesktopItem() : type(ItemType::OTHER),
+                    original_x(0), original_y(0),
+                    x(0), y(0), // Initialize target coords too
+                    lastModified(std::filesystem::file_time_type::min()),
+                    category(ItemCategory::UNCLASSIFIED) {}
 };
 
 class DesktopInfo {
 public:
-    DesktopInfo(); // Constructor
-    ~DesktopInfo(); // Destructor
+    DesktopInfo();
+    ~DesktopInfo();
 
     int getScreenWidth();
     int getScreenHeight();
@@ -35,22 +45,18 @@ public:
     std::vector<DesktopItem> getAllDesktopItems(const std::wstring& desktopPath);
 
 private:
-    // Private helper methods
 #ifdef _WIN32
     DesktopItem::ItemType determineItemType(const std::wstring& itemPath, DWORD fileAttributes);
 #else
-    DesktopItem::ItemType determineItemType(const std::wstring& itemPath, unsigned int fileAttributes); // Placeholder for non-Windows
+    DesktopItem::ItemType determineItemType(const std::wstring& itemPath, unsigned int fileAttributes);
 #endif
     bool getFileLastModified(const std::wstring& itemPath, std::filesystem::file_time_type& lastModifiedTime);
 
 #ifdef _WIN32
-    // For advanced ListView interaction (handle with care) - Windows specific
     HWND getDesktopListViewHandle();
     std::wstring getItemNameFromListView(HWND listViewHwnd, int index, HANDLE hProcess);
     POINT getItemPositionFromListView(HWND listViewHwnd, int index);
 #endif
-    // Add more helpers as needed, e.g. for COM initialization if used broadly
-    bool comInitialized;
 };
 
 #endif // DESKTOPINFO_H
