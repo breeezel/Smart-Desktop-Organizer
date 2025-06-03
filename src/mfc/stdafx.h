@@ -7,13 +7,13 @@
 #define VC_EXTRALEAN            // Exclude rarely-used stuff from Windows headers
 #endif
 
-// Target Windows XP SP1 or later.
+// Target Windows 10
 #ifndef WINVER
-#define WINVER 0x0501
+#define WINVER 0x0A00 // Windows 10
 #endif
 
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0501
+#define _WIN32_WINNT 0x0A00 // Windows 10
 #endif
 
 #ifndef _WIN32_WINDOWS
