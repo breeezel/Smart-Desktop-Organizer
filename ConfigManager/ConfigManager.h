@@ -3,10 +3,10 @@
 #include <string>
 #include <vector>
 #include <filesystem> // For std::filesystem::path
-// #include "nlohmann_json/json.hpp" // Commented out for stubbing
+#include "../libs/nlohmann_json/json.hpp"
 #include <mutex>
 
-// using json = nlohmann::json; // Commented out
+using json = nlohmann::json;
 
 class ConfigManager {
 public:
@@ -41,7 +41,6 @@ private:
     std::vector<std::wstring> m_excludedPaths;
 
     std::filesystem::path m_settingsFilePath;
-    // json m_settingsJson; // Commented out
 
     static std::mutex m_mutex;
 };

@@ -4,6 +4,7 @@
 #include <algorithm> // For std::find
 #include <mutex>
 #include <cstring>   // For strlen (used in logging e.what())
+#include <iomanip>   // For std::setw in saveSettings
 
 #include "../Logging/Logging.h" // For LOG_ macros
 
@@ -14,47 +15,64 @@
 // Define static mutex member
 std::mutex ConfigManager::m_mutex;
 
-// Helper to convert wstring to UTF-8 string for JSON keys/values (Commented out as JSON is stubbed)
-/*
+// Helper to convert wstring to UTF-8 string for JSON keys/values
 static std::string wstringToUtf8_cm(const std::wstring& wstr) {
     if (wstr.empty()) return std::string();
 #ifdef _WIN32
     int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.length(), NULL, 0, NULL, NULL);
-    if (size_needed == 0 && wstr.length() > 0) { return std::string(); }
-    if (size_needed == 0) return std::string();
+    if (size_needed == 0) { // Check if conversion failed or empty string
+        if (wstr.length() > 0) {
+             LOG_WARNING(L"wstringToUtf8_cm: WideCharToMultiByte failed for non-empty string. Error: " + std::to_wstring(GetLastError()));
+        }
+        return std::string();
+    }
     std::string strTo(size_needed, 0);
-    WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.length(), &strTo[0], size_needed, NULL, NULL);
+    int result = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.length(), &strTo[0], size_needed, NULL, NULL);
+    if (result == 0) {
+        LOG_WARNING(L"wstringToUtf8_cm: WideCharToMultiByte failed during conversion. Error: " + std::to_wstring(GetLastError()));
+        return std::string();
+    }
     return strTo;
 #else
-    // Basic stub...
+    // Basic stub for non-Windows - consider a robust library like Boost.Locale or ICU for production
     std::string str; str.reserve(wstr.length());
-    for(char32_t c : wstr) {
-        if (c < 0x80) { str += static_cast<char>(c); }
-        // ... (rest of basic UTF-8 conversion stub)
-        else { str += '?';} // Simplified for brevity
+    for(wchar_t wc : wstr) { // Use wchar_t for wider compatibility on Linux
+        if (wc >= 0 && wc < 0x80) { // Basic ASCII
+            str += static_cast<char>(wc);
+        } else { // Non-ASCII characters are replaced or handled with more complex logic
+            str += '?'; // Placeholder for non-ASCII
+            LOG_DEBUG(L"wstringToUtf8_cm (stub): Non-ASCII character encountered, replaced with '?'.");
+        }
     }
     return str;
 #endif
 }
 
-// Helper to convert UTF-8 string from JSON back to wstring (Commented out)
+// Helper to convert UTF-8 string from JSON back to wstring
 static std::wstring utf8ToWstring_cm(const std::string& str) {
     if (str.empty()) return std::wstring();
 #ifdef _WIN32
     int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.length(), NULL, 0);
-    if (size_needed == 0 && str.length() > 0) { return std::wstring(); }
-    if (size_needed == 0) return std::wstring();
+    if (size_needed == 0) { // Check if conversion failed or empty string
+        if (str.length() > 0) {
+            LOG_WARNING(L"utf8ToWstring_cm: MultiByteToWideChar failed for non-empty string. Error: " + std::to_wstring(GetLastError()));
+        }
+        return std::wstring();
+    }
     std::wstring wstrTo(size_needed, 0);
-    MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.length(), &wstrTo[0], size_needed);
+    int result = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.length(), &wstrTo[0], size_needed);
+    if (result == 0) {
+        LOG_WARNING(L"utf8ToWstring_cm: MultiByteToWideChar failed during conversion. Error: " + std::to_wstring(GetLastError()));
+        return std::wstring();
+    }
     return wstrTo;
 #else
-    // Basic stub...
+    // Basic stub for non-Windows
     std::wstring wstr; wstr.reserve(str.length());
-    for(char c : str) { wstr += static_cast<wchar_t>(static_cast<unsigned char>(c)); }
+    for(char c : str) { wstr += static_cast<wchar_t>(static_cast<unsigned char>(c)); } // Assumes simple char to wchar_t mapping
     return wstr;
 #endif
 }
-*/
 
 ConfigManager& ConfigManager::getInstance() {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -96,8 +114,12 @@ ConfigManager::ConfigManager() {
 #endif
     LOG_INFO(L"ConfigManager: Settings file path determined as: " + m_settingsFilePath.wstring());
 
+    // Apply defaults first, then try to load settings which might override them.
     applyDefaultSettings();
-    loadSettings();
+    if (!loadSettings()) {
+        LOG_WARNING(L"ConfigManager: Failed to load settings. Using default settings. Attempting to save defaults.");
+        saveSettings(); // Try to save the default settings if loading failed
+    }
 }
 
 ConfigManager::~ConfigManager() {
@@ -114,20 +136,122 @@ void ConfigManager::applyDefaultSettings() {
     m_webClassifierEnabled = true;
     m_useRecycleBin = true;
     m_excludedPaths.clear();
-
-    // m_settingsJson = json::object(); // JSON part commented out
-    // m_settingsJson["webClassifierEnabled"] = m_webClassifierEnabled;
-    // m_settingsJson["useRecycleBin"] = m_useRecycleBin;
-    // m_settingsJson["excludedPaths"] = json::array();
+    // No longer need to interact with m_settingsJson here
 }
 
 bool ConfigManager::loadSettings() {
-    LOG_INFO(L"ConfigManager::loadSettings() called (JSON I/O is STUBBED OUT). Defaults are applied.");
-    return false;
+    LOG_INFO(L"ConfigManager: Attempting to load settings from " + m_settingsFilePath.wstring());
+    std::ifstream ifs(m_settingsFilePath);
+
+    if (!ifs.is_open()) {
+        LOG_WARNING(L"ConfigManager: Settings file not found or could not be opened. Using default settings.");
+        return false;
+    }
+
+    // Check if file is empty
+    if (ifs.peek() == std::ifstream::traits_type::eof()) {
+        LOG_WARNING(L"ConfigManager: Settings file is empty. Using default settings.");
+        ifs.close();
+        return false;
+    }
+
+    json j;
+    try {
+        ifs >> j;
+        ifs.close(); // Close file after successful parsing
+    } catch (json::parse_error& e) {
+        LOG_ERROR(L"ConfigManager: Failed to parse settings.json. Error: " + std::string(e.what()));
+        ifs.close(); // Ensure file is closed
+        // Optionally, attempt to rename or delete the corrupt file
+        std::filesystem::path corruptFilePath = m_settingsFilePath;
+        corruptFilePath += L".corrupt";
+        try {
+            std::filesystem::rename(m_settingsFilePath, corruptFilePath);
+            LOG_WARNING(L"ConfigManager: Corrupt settings.json has been renamed to settings.json.corrupt");
+        } catch (const std::filesystem::filesystem_error& fs_err) {
+            LOG_ERROR(L"ConfigManager: Failed to rename corrupt settings.json. Error: " + std::string(fs_err.what()));
+            // If rename fails, consider deleting
+            // std::filesystem::remove(m_settingsFilePath);
+        }
+        return false;
+    }
+
+    LOG_INFO(L"ConfigManager: Successfully parsed settings.json. Applying loaded settings.");
+
+    if (j.contains("webClassifierEnabled") && j["webClassifierEnabled"].is_boolean()) {
+        m_webClassifierEnabled = j["webClassifierEnabled"].get<bool>();
+        LOG_DEBUG(L"ConfigManager: Loaded webClassifierEnabled: " + std::wstring(m_webClassifierEnabled ? L"true" : L"false"));
+    } else {
+        LOG_WARNING(L"ConfigManager: 'webClassifierEnabled' not found or invalid type in settings.json. Using default.");
+    }
+
+    if (j.contains("useRecycleBin") && j["useRecycleBin"].is_boolean()) {
+        m_useRecycleBin = j["useRecycleBin"].get<bool>();
+        LOG_DEBUG(L"ConfigManager: Loaded useRecycleBin: " + std::wstring(m_useRecycleBin ? L"true" : L"false"));
+    } else {
+        LOG_WARNING(L"ConfigManager: 'useRecycleBin' not found or invalid type in settings.json. Using default.");
+    }
+
+    if (j.contains("excludedPaths") && j["excludedPaths"].is_array()) {
+        m_excludedPaths.clear();
+        for (const auto& item : j["excludedPaths"]) {
+            if (item.is_string()) {
+                std::string path_s = item.get<std::string>();
+                std::wstring path_ws = utf8ToWstring_cm(path_s);
+                if (!path_ws.empty()) {
+                    m_excludedPaths.push_back(path_ws);
+                    LOG_DEBUG(L"ConfigManager: Loaded excludedPath: " + path_ws);
+                } else if (!path_s.empty()) {
+                    LOG_WARNING(L"ConfigManager: Failed to convert excludedPath to wstring: " + std::wstring(path_s.begin(), path_s.end()));
+                }
+            } else {
+                LOG_WARNING(L"ConfigManager: Non-string item found in 'excludedPaths' array. Skipping.");
+            }
+        }
+        LOG_DEBUG(L"ConfigManager: Loaded " + std::to_wstring(m_excludedPaths.size()) + L" excluded paths.");
+    } else {
+        LOG_WARNING(L"ConfigManager: 'excludedPaths' not found or not an array in settings.json. Using default (empty list).");
+        m_excludedPaths.clear(); // Ensure it's empty if not found or invalid
+    }
+
+    LOG_INFO(L"ConfigManager: Settings loaded successfully.");
+    return true;
 }
 
 bool ConfigManager::saveSettings() {
-    LOG_INFO(L"ConfigManager::saveSettings() called (JSON I/O is STUBBED OUT).");
+    LOG_INFO(L"ConfigManager: Attempting to save settings to " + m_settingsFilePath.wstring());
+    json j;
+
+    j["webClassifierEnabled"] = m_webClassifierEnabled;
+    j["useRecycleBin"] = m_useRecycleBin;
+
+    json excludedPathsArray = json::array();
+    for (const auto& path : m_excludedPaths) {
+        std::string path_s = wstringToUtf8_cm(path);
+        if (!path_s.empty()) {
+            excludedPathsArray.push_back(path_s);
+        } else if (!path.empty()) {
+            LOG_WARNING(L"ConfigManager: Failed to convert excludedPath to UTF-8 string for saving: " + path);
+        }
+    }
+    j["excludedPaths"] = excludedPathsArray;
+
+    std::ofstream ofs(m_settingsFilePath);
+    if (!ofs.is_open()) {
+        LOG_ERROR(L"ConfigManager: Failed to open settings.json for writing. Error: " + std::to_wstring(errno)); // errno might be relevant
+        return false;
+    }
+
+    try {
+        ofs << std::setw(4) << j << std::endl;
+        ofs.close(); // Ensure file is closed after writing
+    } catch (const std::exception& e) { // Catch potential exceptions during write/serialization
+        LOG_ERROR(L"ConfigManager: Exception while writing JSON to file: " + std::string(e.what()));
+        ofs.close(); // Ensure file is closed
+        return false;
+    }
+
+    LOG_INFO(L"ConfigManager: Settings saved successfully to " + m_settingsFilePath.wstring());
     return true;
 }
 

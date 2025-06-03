@@ -108,18 +108,37 @@ std::vector<DesktopItem> DesktopLayoutManager::calculateLayout(
     // Zones are defined within the effective screen area (sm.effectiveScreenWidth, sm.effectiveScreenHeight)
     // Coordinates here are relative to (0,0) of this effective area.
     // Margins (sm.marginLeft, sm.marginTop) will be added at the very end.
-    int topZoneH = sm.effectiveScreenHeight * 20 / 100;    // 20% for text
-    int bottomZoneH = sm.effectiveScreenHeight * 20 / 100; // 20% for folders
-    int midBodyH = sm.effectiveScreenHeight - topZoneH - bottomZoneH;
-    int leftStripW = sm.effectiveScreenWidth * 25 / 100;   // 25% for programs
-    int rightStripW = sm.effectiveScreenWidth * 25 / 100;  // 25% for games
-    int centerStripW = sm.effectiveScreenWidth - leftStripW - rightStripW; // 50% for others
 
-    zones[ItemCategory::TEXT_FILE]    = {0, 0, sm.effectiveScreenWidth, topZoneH};
-    zones[ItemCategory::FOLDER]       = {0, topZoneH + midBodyH, sm.effectiveScreenWidth, bottomZoneH};
-    zones[ItemCategory::PROGRAM]      = {0, topZoneH, leftStripW, midBodyH};
-    zones[ItemCategory::GAME]         = {leftStripW + centerStripW, topZoneH, rightStripW, midBodyH};
-    zones[ItemCategory::UNCLASSIFIED] = {leftStripW, topZoneH, centerStripW, midBodyH};
+    // Define heights for Folder and Text zones based on percentages
+    int folderZoneH = sm.effectiveScreenHeight * 20 / 100;
+    int textFileZoneH = sm.effectiveScreenHeight * 15 / 100;
+
+    // Calculate Y start positions
+    int folderZoneYStart = sm.effectiveScreenHeight - folderZoneH;
+    int textFileZoneYStart = folderZoneYStart - textFileZoneH;
+
+    if (textFileZoneYStart < 0) {
+        LOG_WARNING(L"Screen too small for dedicated TextFile zone above Folders. Adjusting TextFile zone.");
+        textFileZoneH = folderZoneYStart; // Max possible height without going below 0
+        textFileZoneYStart = 0;
+    }
+
+    zones[ItemCategory::FOLDER] = {0, folderZoneYStart, sm.effectiveScreenWidth, folderZoneH};
+    zones[ItemCategory::TEXT_FILE] = {0, textFileZoneYStart, sm.effectiveScreenWidth, textFileZoneH};
+
+    // Define the middle zone for other categories
+    int middleZoneYStart = 0;
+    int middleZoneHeight = textFileZoneYStart; // Height from top of screen to start of TextFile zone
+    if (middleZoneHeight < 0) middleZoneHeight = 0; // Safety check
+
+    // Subdivide the middle zone
+    int leftStripW = sm.effectiveScreenWidth * 25 / 100;
+    int rightStripW = sm.effectiveScreenWidth * 25 / 100;
+    int centerStripW = sm.effectiveScreenWidth - leftStripW - rightStripW;
+
+    zones[ItemCategory::PROGRAM]      = {0, middleZoneYStart, leftStripW, middleZoneHeight};
+    zones[ItemCategory::GAME]         = {leftStripW + centerStripW, middleZoneYStart, rightStripW, middleZoneHeight};
+    zones[ItemCategory::UNCLASSIFIED] = {leftStripW, middleZoneYStart, centerStripW, middleZoneHeight};
     zones[ItemCategory::IMAGE_FILE]   = zones[ItemCategory::UNCLASSIFIED];
     zones[ItemCategory::VIDEO_FILE]   = zones[ItemCategory::UNCLASSIFIED];
     zones[ItemCategory::ARCHIVE_FILE] = zones[ItemCategory::UNCLASSIFIED];
@@ -141,8 +160,11 @@ std::vector<DesktopItem> DesktopLayoutManager::calculateLayout(
                 itemsPerLineForCategory[category] = calculateItemsPerLine(zone.width, sm.cellWidth, catItems.size(), category);
                 currentCategoryCursors[category] = {zone.x + zone.width - sm.effectiveIconWidth, zone.y + zone.height - sm.effectiveIconHeight};
                 break;
-            case ItemCategory::TEXT_FILE:   // Top-down, Right-to-Left
-            case ItemCategory::GAME:
+            case ItemCategory::TEXT_FILE:   // Bottom-up, Right-to-Left (like Folders)
+                itemsPerLineForCategory[category] = calculateItemsPerLine(zone.width, sm.cellWidth, catItems.size(), category);
+                currentCategoryCursors[category] = {zone.x + zone.width - sm.effectiveIconWidth, zone.y + zone.height - sm.effectiveIconHeight};
+                break;
+            case ItemCategory::GAME: // Top-down, Right-to-Left
                 itemsPerLineForCategory[category] = calculateItemsPerLine(zone.width, sm.cellWidth, catItems.size(), category);
                 currentCategoryCursors[category] = {zone.x + zone.width - sm.effectiveIconWidth, zone.y };
                 break;
@@ -193,8 +215,15 @@ std::vector<DesktopItem> DesktopLayoutManager::calculateLayout(
                 }
                 if (cursor.y < zone.y) outOfBounds = true;
                 break;
-            case ItemCategory::TEXT_FILE: // Top-down, RTL
-            case ItemCategory::GAME:
+            case ItemCategory::TEXT_FILE: // Bottom-up, RTL (like Folders)
+                if (itemsInThisLine >= maxItemsPerThisLine) {
+                    cursor.x = zone.x + zone.width - sm.effectiveIconWidth; // Reset to right edge
+                    cursor.y -= sm.cellHeight;                             // Move to row above
+                    itemsInThisLine = 0;
+                }
+                if (cursor.y < zone.y) outOfBounds = true; // Check if cursor moved above zone top
+                break;
+            case ItemCategory::GAME: // Top-down, RTL
                  if (itemsInThisLine >= maxItemsPerThisLine) {
                     cursor.x = zone.x + zone.width - sm.effectiveIconWidth;
                     cursor.y += sm.cellHeight;
@@ -235,7 +264,7 @@ std::vector<DesktopItem> DesktopLayoutManager::calculateLayout(
         // Advance cursor for the *next* item (after current item is placed)
         switch (category) {
             case ItemCategory::FOLDER: cursor.x -= sm.cellWidth; break; // RTL
-            case ItemCategory::TEXT_FILE: cursor.x -= sm.cellWidth; break; // RTL
+            case ItemCategory::TEXT_FILE: cursor.x -= sm.cellWidth; break; // RTL (like Folders)
             case ItemCategory::GAME: cursor.x -= sm.cellWidth; break; // RTL
             case ItemCategory::PROGRAM: cursor.y += sm.cellHeight; break; // TTB
             default: cursor.x += sm.cellWidth; break; // LTR

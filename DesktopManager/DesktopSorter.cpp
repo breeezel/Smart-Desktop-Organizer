@@ -48,46 +48,21 @@ DesktopSorter::~DesktopSorter() {
 }
 
 #ifdef _WIN32
-HWND DesktopSorter::getDesktopListViewHandle() { /* ... implementation ... */
-    HWND desktopHwnd = GetDesktopWindow();
-    if (!desktopHwnd) return NULL;
-    HWND shellDllDefViewHwnd = FindWindowEx(desktopHwnd, NULL, L"SHELLDLL_DefView", NULL);
-    if (!shellDllDefViewHwnd) {
-        HWND progmanHwnd = FindWindow(L"Progman", NULL);
-        if (progmanHwnd) {
-            shellDllDefViewHwnd = FindWindowEx(progmanHwnd, NULL, L"SHELLDLL_DefView", NULL);
-        }
-        if (!shellDllDefViewHwnd) {
-            EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
-                HWND p = FindWindowEx(hwnd, NULL, L"SHELLDLL_DefView", NULL);
-                if (p) { *reinterpret_cast<HWND*>(lParam) = p; return FALSE; }
-                return TRUE;
-            }, reinterpret_cast<LPARAM>(&shellDllDefViewHwnd));
-        }
-    }
-    if (!shellDllDefViewHwnd) return NULL;
-    return FindWindowEx(shellDllDefViewHwnd, NULL, L"SysListView32", L"FolderView");
-}
-std::wstring DesktopSorter::getItemNameFromListView(HWND listViewHwnd, int index, HANDLE hProcess) { /* ... */
-    const int bufferSize = MAX_PATH + 1; LVITEMW lvItem = {0}; lvItem.mask = LVIF_TEXT; lvItem.iItem = index; lvItem.iSubItem = 0; lvItem.cchTextMax = bufferSize;
-    LPVOID remoteBuffer = VirtualAllocEx(hProcess, NULL, bufferSize * sizeof(wchar_t), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-    if (!remoteBuffer) return L""; lvItem.pszText = (LPWSTR)remoteBuffer; SendMessage(listViewHwnd, LVM_GETITEMTEXTW, (WPARAM)index, (LPARAM)&lvItem);
-    wchar_t localBuffer[bufferSize] = {0}; ReadProcessMemory(hProcess, remoteBuffer, localBuffer, bufferSize * sizeof(wchar_t), NULL);
-    VirtualFreeEx(hProcess, remoteBuffer, 0, MEM_RELEASE); return std::wstring(localBuffer);
-}
+// Removed getDesktopListViewHandle and getItemNameFromListView
 #endif
 
 void DesktopSorter::setItemPosition(const std::wstring& itemName, int x, int y) { /* ... implementation with logging ... */
 #ifdef _WIN32
+    DesktopInfo dInfo; // Create an instance of DesktopInfo
     LOG_DEBUG(L"DesktopSorter::setItemPosition - Attempting to move item '" + itemName + L"' to (" + std::to_wstring(x) + L"," + std::to_wstring(y) + L")");
-    HWND listViewHwnd = getDesktopListViewHandle();
+    HWND listViewHwnd = dInfo.getDesktopListViewHandle();
     if (!listViewHwnd) { LOG_ERROR(L"DesktopSorter::setItemPosition - Failed to get Desktop ListView handle."); return; }
     int itemCount = ListView_GetItemCount(listViewHwnd); if (itemCount <= 0) return;
     DWORD dwProcessId; GetWindowThreadProcessId(listViewHwnd, &dwProcessId);
     HANDLE hProcess = OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION, FALSE, dwProcessId);
     if (!hProcess) { LOG_ERROR(L"DesktopSorter::setItemPosition - OpenProcess failed. Error: " + std::to_wstring(GetLastError())); return; }
     int itemIndex = -1;
-    for (int i = 0; i < itemCount; ++i) { if (getItemNameFromListView(listViewHwnd, i, hProcess) == itemName) { itemIndex = i; break; } }
+    for (int i = 0; i < itemCount; ++i) { if (dInfo.getItemNameFromListView(listViewHwnd, i, hProcess) == itemName) { itemIndex = i; break; } }
     CloseHandle(hProcess);
     if (itemIndex != -1) {
         if(!ListView_SetItemPosition(listViewHwnd, itemIndex, x, y)){ LOG_ERROR(L"DesktopSorter::setItemPosition - ListView_SetItemPosition failed. Error: " + std::to_wstring(GetLastError())); }

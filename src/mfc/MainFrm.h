@@ -2,6 +2,7 @@
 #include <afxwin.h>
 #include <afxext.h>
 #include <afxbutton.h>
+#include "SettingsDlg.h" // Added for CSettingsDlg
 
 // Define resource IDs
 #define IDR_MAINFRAME                   128

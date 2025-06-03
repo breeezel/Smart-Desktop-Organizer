@@ -10,6 +10,61 @@
 
 // Static helper toLower_internal and wstringToUtf8 remain the same
 
+// Helper function to extract text between two tags
+static std::string extractBetweenTags(const std::string& source, const std::string& startTag, const std::string& endTag, size_t searchStartPos = 0) {
+    size_t startPos = source.find(startTag, searchStartPos);
+    if (startPos == std::string::npos) {
+        return "";
+    }
+    startPos += startTag.length();
+    size_t endPos = source.find(endTag, startPos);
+    if (endPos == std::string::npos) {
+        return "";
+    }
+    return source.substr(startPos, endPos - startPos);
+}
+
+// Helper function to extract content from <meta name="description" content="...">
+static std::string extractMetaDescription(const std::string& lowerHtml) {
+    const std::string metaTagStart = "<meta name=\"description\" content=\"";
+    size_t startPos = lowerHtml.find(metaTagStart);
+    if (startPos == std::string::npos) {
+        // Try with single quotes for name attribute
+        const std::string metaTagStartSingleName = "<meta name='description' content=\"";
+        startPos = lowerHtml.find(metaTagStartSingleName);
+        if (startPos == std::string::npos) {
+            // Try with content attribute having single quotes
+            const std::string metaTagStartSingleContent = "<meta name=\"description\" content='";
+            startPos = lowerHtml.find(metaTagStartSingleContent);
+            if (startPos == std::string::npos) {
+                 const std::string metaTagStartSingleBoth = "<meta name='description' content='";
+                 startPos = lowerHtml.find(metaTagStartSingleBoth);
+                 if (startPos == std::string::npos) return "";
+                 startPos += metaTagStartSingleBoth.length();
+                 size_t endPos = lowerHtml.find("'", startPos);
+                 if (endPos == std::string::npos) return "";
+                 return lowerHtml.substr(startPos, endPos - startPos);
+            }
+            startPos += metaTagStartSingleContent.length();
+            size_t endPos = lowerHtml.find("'", startPos);
+            if (endPos == std::string::npos) return "";
+            return lowerHtml.substr(startPos, endPos - startPos);
+        }
+        startPos += metaTagStartSingleName.length();
+    } else {
+        startPos += metaTagStart.length();
+    }
+
+    size_t endPos = lowerHtml.find("\"", startPos);
+    if (endPos == std::string::npos) {
+        // If no closing quote, maybe it's the end of the tag
+        endPos = lowerHtml.find(">", startPos);
+        if (endPos == std::string::npos) return "";
+    }
+    return lowerHtml.substr(startPos, endPos - startPos);
+}
+
+
 static std::string toLower_internal(std::string s) {
     std::transform(s.begin(), s.end(), s.begin(),
                    [](unsigned char c){ return static_cast<char>(std::tolower(c)); });
@@ -326,46 +381,133 @@ bool WebClassifier::executeHttpGet(const std::string& url, std::string& response
 #endif
 }
 
-ItemCategory WebClassifier::classifyItemFromHtml(const std::string& htmlResponse, const std::wstring& itemName) { /* remains same */
+ItemCategory WebClassifier::classifyItemFromHtml(const std::string& htmlResponse, const std::wstring& itemName) {
 #ifdef _WIN32
     std::string lowerHtml = toLower_internal(htmlResponse);
-    std::wstring lowerItemNameW = itemName;
-    std::transform(lowerItemNameW.begin(), lowerItemNameW.end(), lowerItemNameW.begin(), ::towlower);
-    std::vector<std::string> gameKeywords = {"video game", "computer game", "pc game", "official game site", "download game", "buy game", "play game", "игра", "компьютерная игра", "скачать игру", "купить игру", "играть в игру", "официальный сайт игры", "steam store", "epic games store", "gog.com", "origin store", "ubisoft connect", "game review", "gameplay", "walkthrough", "прохождение игры", "обзор игры"};
-    std::vector<std::string> programKeywords = {"software", "application", "program", "utility", "tool", "driver", "sdk", "ide", "программа", "приложение", "утилита", "инструмент", "драйвер", "download software", "official website", "скачать программу", "официальный сайт"};
+
+    // Keywords
+    const std::vector<std::string> gameKeywords = {"video game", "computer game", "pc game", "official game site", "download game", "buy game", "play game", "игра", "компьютерная игра", "скачать игру", "купить игру", "играть в игру", "официальный сайт игры", "steam store", "epic games store", "gog.com", "origin store", "ubisoft connect", "game review", "gameplay", "walkthrough", "прохождение игры", "обзор игры", "esrb", "pegi"};
+    const std::vector<std::string> programKeywords = {"software", "application", "program", "utility", "tool", "driver", "sdk", "ide", "программа", "приложение", "утилита", "инструмент", "драйвер", "download software", "official website", "скачать программу", "официальный сайт", "freeware", "shareware", "open source"};
+
+    // Extract prioritized content
+    // Search in original case htmlResponse for tags, then lower the extracted content.
+    std::string titleText = toLower_internal(extractBetweenTags(htmlResponse, "<title>", "</title>"));
+    std::string metaDescriptionText = toLower_internal(extractMetaDescription(lowerHtml)); // lowerHtml is fine here as meta tags are usually lc
+    std::string h1Text = toLower_internal(extractBetweenTags(htmlResponse, "<h1>", "</h1>"));
+    // Could add logic for more H1s if needed:
+    // size_t nextH1SearchPos = 0;
+    // if (!h1Text.empty()) nextH1SearchPos = htmlResponse.find("<h1>") + 4;
+    // if (h1Text.length() < 20 && nextH1SearchPos != std::string::npos) { // If first H1 is short
+    //     h1Text += " " + toLower_internal(extractBetweenTags(htmlResponse, "<h1>", "</h1>", nextH1SearchPos));
+    // }
+
+
+    // Scoring
     int gameScore = 0;
     int programScore = 0;
-    for (const auto& keyword : gameKeywords) if (lowerHtml.find(keyword) != std::string::npos) gameScore++;
-    for (const auto& keyword : programKeywords) if (lowerHtml.find(keyword) != std::string::npos) programScore++;
-    std::string lowerItemNameS_utf8 = wstringToUtf8(lowerItemNameW);
-    if (toLower_internal(lowerItemNameS_utf8).find("game") != std::string::npos || toLower_internal(lowerItemNameS_utf8).find("игра") != std::string::npos) gameScore += 2;
-    if (toLower_internal(lowerItemNameS_utf8).find("software") != std::string::npos || toLower_internal(lowerItemNameS_utf8).find("app") != std::string::npos || toLower_internal(lowerItemNameS_utf8).find("program") != std::string::npos) programScore += 2;
+    const int titleWeight = 3;
+    const int metaWeight = 2;
+    const int h1Weight = 2;
+    const int bodyWeight = 1;
+
+    int gameScoreTitle = 0, gameScoreMeta = 0, gameScoreH1 = 0, gameScoreBody = 0;
+    int progScoreTitle = 0, progScoreMeta = 0, progScoreH1 = 0, progScoreBody = 0;
+
+    // Score from title
+    for (const auto& keyword : gameKeywords) if (!titleText.empty() && titleText.find(keyword) != std::string::npos) gameScoreTitle += titleWeight;
+    for (const auto& keyword : programKeywords) if (!titleText.empty() && titleText.find(keyword) != std::string::npos) progScoreTitle += titleWeight;
+    gameScore += gameScoreTitle;
+    programScore += progScoreTitle;
+
+    // Score from meta description
+    for (const auto& keyword : gameKeywords) if (!metaDescriptionText.empty() && metaDescriptionText.find(keyword) != std::string::npos) gameScoreMeta += metaWeight;
+    for (const auto& keyword : programKeywords) if (!metaDescriptionText.empty() && metaDescriptionText.find(keyword) != std::string::npos) progScoreMeta += metaWeight;
+    gameScore += gameScoreMeta;
+    programScore += progScoreMeta;
+
+    // Score from H1
+    for (const auto& keyword : gameKeywords) if (!h1Text.empty() && h1Text.find(keyword) != std::string::npos) gameScoreH1 += h1Weight;
+    for (const auto& keyword : programKeywords) if (!h1Text.empty() && h1Text.find(keyword) != std::string::npos) progScoreH1 += h1Weight;
+    gameScore += gameScoreH1;
+    programScore += progScoreH1;
+
+    // Score from overall body
+    // Only add body score if prioritized sections didn't give a strong signal, or add a fraction to avoid too much dominance by body.
+    // For simplicity, adding it directly.
+    for (const auto& keyword : gameKeywords) if (lowerHtml.find(keyword) != std::string::npos) gameScoreBody += bodyWeight;
+    for (const auto& keyword : programKeywords) if (lowerHtml.find(keyword) != std::string::npos) progScoreBody += bodyWeight;
+    gameScore += gameScoreBody;
+    programScore += progScoreBody;
+
+    // Item name bonus
+    std::wstring tempLowerItemName = itemName;
+    std::transform(tempLowerItemName.begin(), tempLowerItemName.end(), tempLowerItemName.begin(), ::towlower);
+    std::string lowerItemNameS_utf8 = wstringToUtf8(tempLowerItemName);
+    int itemNameGameBonus = 0;
+    int itemNameProgBonus = 0;
+
+    if (lowerItemNameS_utf8.find("game") != std::string::npos || lowerItemNameS_utf8.find("игра") != std::string::npos) itemNameGameBonus = 2;
+    if (lowerItemNameS_utf8.find("software") != std::string::npos || lowerItemNameS_utf8.find("app") != std::string::npos || lowerItemNameS_utf8.find("program") != std::string::npos) itemNameProgBonus = 2;
+    gameScore += itemNameGameBonus;
+    programScore += itemNameProgBonus;
+
+    LOG_DEBUG(L"WebClassifier: Item '" + itemName + L"' Raw Scores: " +
+              L"Game(T:" + std::to_wstring(gameScoreTitle) + L",M:" + std::to_wstring(gameScoreMeta) + L",H1:" + std::to_wstring(gameScoreH1) + L",B:" + std::to_wstring(gameScoreBody) + L",Name:" + std::to_wstring(itemNameGameBonus) + L") Total=" + std::to_wstring(gameScore) + L" | " +
+              L"Prog(T:" + std::to_wstring(progScoreTitle) + L",M:" + std::to_wstring(progScoreMeta) + L",H1:" + std::to_wstring(progScoreH1) + L",B:" + std::to_wstring(progScoreBody) + L",Name:" + std::to_wstring(itemNameProgBonus) + L") Total=" + std::to_wstring(programScore));
+
+    // Decision logic
     if (gameScore > 0 && programScore == 0) return ItemCategory::GAME;
     if (programScore > 0 && gameScore == 0) return ItemCategory::PROGRAM;
-    if (gameScore > programScore) {
-        if (lowerItemNameW.find(L"sdk") != std::wstring::npos || lowerItemNameW.find(L"engine") != std::wstring::npos || lowerItemNameW.find(L"editor") != std::wstring::npos || lowerItemNameW.find(L"development kit") != std::wstring::npos || lowerItemNameW.find(L"dev kit") != std::wstring::npos) {
-            if (lowerHtml.find("game development") != std::string::npos || lowerHtml.find("разработка игр") != std::string::npos || lowerHtml.find("game engine") != std::string::npos) {
-                return ItemCategory::PROGRAM;
-            }
+
+    // Special handling for game development tools (more likely to be programs)
+    if (gameScore > programScore) { // If game score is higher
+        bool isDevToolByName = (tempLowerItemName.find(L"sdk") != std::wstring::npos ||
+                               tempLowerItemName.find(L"engine") != std::wstring::npos ||
+                               tempLowerItemName.find(L"editor") != std::wstring::npos ||
+                               tempLowerItemName.find(L"development kit") != std::wstring::npos ||
+                               tempLowerItemName.find(L"dev kit") != std::wstring::npos);
+
+        bool devKeywordsInHtml = (lowerHtml.find("game development") != std::string::npos ||
+                                 lowerHtml.find("разработка игр") != std::string::npos ||
+                                 lowerHtml.find("game engine") != std::string::npos ||
+                                 titleText.find("game engine") != std::string::npos || // Check title too
+                                 metaDescriptionText.find("game engine") != std::string::npos);
+
+        if (isDevToolByName && devKeywordsInHtml) {
+            LOG_DEBUG(L"WebClassifier: Item '" + itemName + L"' looks like a game dev tool. Classified as PROGRAM despite higher game score.");
+            return ItemCategory::PROGRAM;
         }
         return ItemCategory::GAME;
     }
+
     if (programScore > gameScore) return ItemCategory::PROGRAM;
+
+    // If scores are equal and non-zero
     if (gameScore > 0 && gameScore == programScore) {
-        if (lowerItemNameW.find(L"studio") != std::wstring::npos || lowerItemNameW.find(L"maker") != std::wstring::npos || lowerItemNameW.find(L"develop") != std::wstring::npos || lowerItemNameW.find(L"sdk") != std::wstring::npos) {
+        // If item name suggests a dev tool, lean towards PROGRAM
+        if (tempLowerItemName.find(L"studio") != std::wstring::npos ||
+            tempLowerItemName.find(L"maker") != std::wstring::npos ||
+            tempLowerItemName.find(L"develop") != std::wstring::npos ||
+            tempLowerItemName.find(L"sdk") != std::wstring::npos ||
+            tempLowerItemName.find(L"editor") != std::wstring::npos) {
+            LOG_DEBUG(L"WebClassifier: Item '" + itemName + L"' has equal scores, but name suggests dev tool. Classified as PROGRAM.");
             return ItemCategory::PROGRAM;
         }
+        // If no strong signal from name, could be UNCLASSIFIED or lean based on other heuristics
+        LOG_DEBUG(L"WebClassifier: Item '" + itemName + L"' has equal non-zero scores. Defaulting to UNCLASSIFIED for now.");
         return ItemCategory::UNCLASSIFIED;
     }
+
     return ItemCategory::UNCLASSIFIED;
 #else
     // LOG_DEBUG(L"WebClassifier::classifyItemFromHtml: Using non-Windows stub for item: " + itemName);
-    (void)htmlResponse;
-    std::wstring lowerItemNameW = itemName;
-    std::transform(lowerItemNameW.begin(), lowerItemNameW.end(), lowerItemNameW.begin(), ::towlower);
-    if (lowerItemNameW.find(L"game") != std::wstring::npos) return ItemCategory::GAME;
-    if (lowerItemNameW.find(L"editor") != std::wstring::npos || lowerItemNameW.find(L"browser") != std::wstring::npos) return ItemCategory::PROGRAM;
-    std::string lowerMockResponse = toLower_internal(htmlResponse);
+    (void)htmlResponse; // Mark as unused
+    std::wstring tempLowerItemName = itemName;
+    std::transform(tempLowerItemName.begin(), tempLowerItemName.end(), tempLowerItemName.begin(), ::towlower);
+    if (tempLowerItemName.find(L"game") != std::wstring::npos) return ItemCategory::GAME;
+    if (tempLowerItemName.find(L"editor") != std::wstring::npos || tempLowerItemName.find(L"browser") != std::wstring::npos) return ItemCategory::PROGRAM;
+
+    std::string lowerMockResponse = toLower_internal(htmlResponse); // htmlResponse is already lowercased in stub
     if(lowerMockResponse.find("game")!= std::string::npos) return ItemCategory::GAME;
     if(lowerMockResponse.find("software")!= std::string::npos) return ItemCategory::PROGRAM;
     if(lowerMockResponse.find("application")!= std::string::npos) return ItemCategory::PROGRAM;

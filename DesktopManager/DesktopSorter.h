@@ -35,8 +35,7 @@ private:
     std::unique_ptr<WebClassifier> m_webClassifier;
 
 #ifdef _WIN32
-    HWND getDesktopListViewHandle();
-    std::wstring getItemNameFromListView(HWND listViewHwnd, int index, HANDLE hProcess);
+    // Removed getDesktopListViewHandle and getItemNameFromListView
 #endif
 };
 
