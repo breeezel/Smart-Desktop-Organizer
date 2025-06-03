@@ -8,8 +8,6 @@
 #endif
 
 // Target Windows XP SP1 or later.
-// This also defines _WIN32_WINNT to be 0x0501 for things like GetDpiForMonitor
-// If targeting newer Windows versions primarily, these could be updated.
 #ifndef WINVER
 #define WINVER 0x0501
 #endif
@@ -46,4 +44,4 @@
 #include <string>
 #include <map>
 #include <algorithm>
-#include <memory> // For std::unique_ptr etc.
+#include <memory>
