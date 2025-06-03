@@ -40,6 +40,10 @@ target_include_directories(SmartDesktopOrganizer PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR} # General project root
     "${CMAKE_CURRENT_SOURCE_DIR}/libs" # For nlohmann_json
     "${CMAKE_CURRENT_SOURCE_DIR}/src/mfc" # For MFC headers created in this project
+
+    # Explicitly add reported MFC include path
+    "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.40.33807/atlmfc/include"
+
     # Adding individual component directories for clarity, though ${CMAKE_CURRENT_SOURCE_DIR} might cover them
     "${CMAKE_CURRENT_SOURCE_DIR}/DesktopManager"
     "${CMAKE_CURRENT_SOURCE_DIR}/WebClassifier"
