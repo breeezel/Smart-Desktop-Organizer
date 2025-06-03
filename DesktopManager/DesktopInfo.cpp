@@ -1,5 +1,6 @@
 #include "DesktopInfo.h"
 #include <iostream> // For debug output
+#include <chrono>   // Added for std::chrono types
 #include "../Logging/Logging.h" // For LOG_ macros
 
 #ifdef _WIN32
@@ -219,7 +220,21 @@ std::vector<DesktopItem> DesktopInfo::getAllDesktopItems(const std::wstring& des
             ULARGE_INTEGER ull;
             ull.LowPart = fileAttributesData.ftLastWriteTime.dwLowDateTime;
             ull.HighPart = fileAttributesData.ftLastWriteTime.dwHighDateTime;
-            item.lastModified = std::filesystem::file_time_type(std::chrono::nanoseconds(ull.QuadPart * 100 - 116444736000000000LL));
+
+            // Value is 100-nanosecond intervals since January 1, 1601 (UTC)
+            // Convert to nanoseconds since Unix epoch (January 1, 1970 UTC)
+            // Number of 100-nanosecond intervals between Jan 1, 1601 and Jan 1, 1970 is 116444736000000000
+            long long hundred_ns_since_1601 = ull.QuadPart;
+            if (hundred_ns_since_1601 >= 116444736000000000LL) {
+                long long ns_since_unix_epoch = (hundred_ns_since_1601 - 116444736000000000LL) * 100;
+                std::chrono::nanoseconds duration_since_epoch(ns_since_unix_epoch);
+                // Cast to the file_time_type's clock's time_point representation
+                item.lastModified = std::filesystem::file_time_type(std::chrono::duration_cast<std::filesystem::file_time_type::duration>(duration_since_epoch));
+            } else {
+                // Handle timestamps before Unix epoch if necessary, or set to a minimum
+                item.lastModified = std::filesystem::file_time_type::min();
+                LOG_WARNING(L"DesktopInfo::getAllDesktopItems - Timestamp for " + item.path + L" is before Unix epoch or invalid, setting to min.");
+            }
         } else {
             LOG_WARNING(L"DesktopInfo::getAllDesktopItems - GetFileAttributesExW failed for: " + item.path + L". Error: " + std::to_wstring(GetLastError()));
             item.type = DesktopItem::ItemType::OTHER;
