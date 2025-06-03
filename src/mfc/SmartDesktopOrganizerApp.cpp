@@ -1,3 +1,4 @@
+#include "stdafx.h" // Added for PCH
 #include "SmartDesktopOrganizerApp.h"
 #include "MainFrm.h"
 #include "../Logging/Logging.h" // Include Logging header
