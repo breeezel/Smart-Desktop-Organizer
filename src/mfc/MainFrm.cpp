@@ -190,6 +190,7 @@ void CMainFrame::OnSortDesktop() {
 
     try {
         DesktopInfo dInfo; // Constructor calls CoInitializeEx
+        DesktopChecker checker; // Create a DesktopChecker instance
         // DesktopSorter's constructor creates WebClassifier, which also calls CoInitializeEx.
         // This nested CoInitializeEx is fine if they are apartment threaded and on the same thread.
         DesktopSorter dSorter;
@@ -205,19 +206,10 @@ void CMainFrame::OnSortDesktop() {
 
         ScreenMetrics screenMetrics(screenW, screenH, dpiScale);
 
-        // DesktopInfo should provide its own getDesktopPath method.
-        // Let's assume DesktopInfo has a method like getDesktopPath()
-        // If not, this part needs adjustment or DesktopChecker::getDesktopPath() could be used if static or on a dChecker instance.
-        // For now, proceeding as if dInfo.getDesktopPath() exists.
-        std::wstring desktopPath = dInfo.getDesktopPath(); // Placeholder if method doesn't exist
-        if (desktopPath.empty()) {
-            // Fallback or error if DesktopInfo doesn't provide it directly
-            DesktopChecker tempChecker; // Temporary, if DesktopInfo can't provide path
-            desktopPath = tempChecker.getDesktopPath();
-        }
 
+        std::wstring desktopPath = checker.getDesktopPath(); // Use DesktopChecker instance
         if (desktopPath.empty()) {
-            LOG_ERROR(L"CMainFrame::OnSortDesktop - Failed to get desktop path.");
+            LOG_ERROR(L"CMainFrame::OnSortDesktop - Failed to get desktop path from DesktopChecker.");
             AfxMessageBox(L"Error: Could not retrieve desktop path.", MB_OK | MB_ICONERROR);
             AfxGetApp()->DoWaitCursor(-1);
             m_wndStatusBar.SetPaneText(0, L"Sort failed: No desktop path.");
