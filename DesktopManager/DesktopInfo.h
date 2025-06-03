@@ -52,6 +52,7 @@ private:
 #endif
     bool getFileLastModified(const std::wstring& itemPath, std::filesystem::file_time_type& lastModifiedTime);
 
+public: // Moved from private to public
 #ifdef _WIN32
     HWND getDesktopListViewHandle();
     std::wstring getItemNameFromListView(HWND listViewHwnd, int index, HANDLE hProcess);
